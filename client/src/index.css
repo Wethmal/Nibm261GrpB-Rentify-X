@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Colors from design.md */
+  --color-primary-navy: #071573;
+  --color-primary-blue: #0364FA;
+  --color-dark-charcoal: #313131;
+  --color-slate-gray: #6C757D;
+  --color-light-platinum: #E2E8F0;
+
+  /* Additional Rentify Theme Colors */
+  --color-teal-cta: #008080;
+  --color-teal-cta-hover: #006666;
+  --color-off-white: #F8F9FA;
+  --color-white: #FFFFFF;
+  --color-error: #DC3545;
+  --color-success: #28A745;
+  --color-border: #E2E8F0;
+  --color-disabled: #A0AEC0;
+
+  /* Semantics */
+  --color-primary: var(--color-primary-blue);
+  --color-surface: var(--color-white);
+  --color-text-primary: var(--color-primary-navy);
+  --color-text-secondary: var(--color-slate-gray);
+
+  --font-main: 'Sora', sans-serif;
+  --border-radius: 8px;
+  --transition: all 0.2s ease-in-out;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--color-off-white);
+  color: var(--color-dark-charcoal);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--color-primary-navy);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+a {
+  color: var(--color-primary-blue);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+}
