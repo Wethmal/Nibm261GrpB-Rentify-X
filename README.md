@@ -87,3 +87,167 @@ rentify/
 ```
 ---
 
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your local machine:
+
+| Tool           | Minimum Version | Installation                                         |
+| -------------- | --------------- | ---------------------------------------------------- |
+| **Node.js**    | `>= 18.0.0`    | [nodejs.org](https://nodejs.org/)                    |
+| **npm**        | `>= 9.0.0`     | Comes with Node.js                                   |
+| **PostgreSQL** | `>= 14.0`      | [postgresql.org](https://www.postgresql.org/download) |
+| **Git**        | Latest          | [git-scm.com](https://git-scm.com/)                 |
+
+**Optional (for full functionality):**
+- [Cloudinary](https://cloudinary.com/) account — for file/image uploads
+- SMTP credentials (Gmail App Password) — for email notifications
+- Payment gateway keys (PayHere / Stripe) — for payment processing
+
+---
+
+## Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd rentify
+```
+
+### 2. Install Dependencies
+
+```bash
+# Install root dependencies (concurrently)
+npm install
+
+# Install client dependencies
+cd client && npm install && cd ..
+
+# Install server dependencies
+cd server && npm install && cd ..
+```
+
+> **Tip:** You can also run `npm install` in each directory separately if you prefer.
+
+### 3. Configure Environment Variables
+
+```bash
+# Copy the example environment files
+cp server/.env.example server/.env
+cp client/.env.example client/.env
+```
+
+Now open `server/.env` in your editor and fill in your **actual values**:
+
+```env
+# Required — Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=rentify_db
+DB_USER=postgres
+DB_PASSWORD=<your_postgres_password>
+
+# Required — JWT
+JWT_SECRET=<generate_a_strong_random_string>
+
+# Optional — Cloudinary (for image uploads)
+CLOUDINARY_CLOUD_NAME=<your_cloud_name>
+CLOUDINARY_API_KEY=<your_api_key>
+CLOUDINARY_API_SECRET=<your_api_secret>
+```
+
+
+### 4. Set Up the Database
+
+Create the database and run migrations **in order**:
+
+```bash
+# Create the database
+psql -U postgres -c "CREATE DATABASE rentify_db;"
+
+# Run all migrations in sequence
+psql -U postgres -d rentify_db -f server/db/migrations/01_users.sql
+psql -U postgres -d rentify_db -f server/db/migrations/02_categories.sql
+psql -U postgres -d rentify_db -f server/db/migrations/03_listings.sql
+psql -U postgres -d rentify_db -f server/db/migrations/04_listing_availability.sql
+psql -U postgres -d rentify_db -f server/db/migrations/05_bookings.sql
+psql -U postgres -d rentify_db -f server/db/migrations/06_payments.sql
+psql -U postgres -d rentify_db -f server/db/migrations/07_reviews.sql
+psql -U postgres -d rentify_db -f server/db/migrations/08_messages.sql
+psql -U postgres -d rentify_db -f server/db/migrations/09_notifications.sql
+
+# (Optional) Seed with initial categories
+psql -U postgres -d rentify_db -f server/db/seeds/seed.sql
+```
+
+### 5. Run the Application
+
+```bash
+# Start both client and server concurrently
+npm run dev
+```
+
+The application will be available at:
+
+| Service    | URL                           |
+| ---------- | ----------------------------- |
+| **Client** | http://localhost:5173         |
+| **Server** | http://localhost:5000         |
+| **Health** | http://localhost:5000/api/v1/health |
+
+---
+
+## Database Migrations
+
+Migrations are plain SQL files in `server/db/migrations/`. Apply them in this order (note `003b` creates the
+`condition_enum` type that `03_listings.sql` needs, so it runs **before** `03` and again after it):
+
+`01_users` → `02_categories` → `003b_alter_listings_equipment` → `03_listings` → `003b_alter_listings_equipment` →
+`04_listing_availability` → `05_bookings` → `06_payments` → `07_reviews` → `08_messages` → `09_notifications` →
+`10`–`17` → `18_gap_features`.
+
+| File                          | Purpose                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------- |
+| `01_users.sql`                | Users, roles, NIC verification                                                              |
+| `02_categories.sql`           | Hierarchical service/equipment types                                                        |
+| `03_listings.sql`             | Services and equipment with geo + JSONB                                                     |
+| `04_listing_availability.sql` | Date-level availability per listing                                                         |
+| `05_bookings.sql`             | Booking transactions with bundle support                                                    |
+| `06_payments.sql`             | Escrow tracking and gateway references                                                      |
+| `07_reviews.sql`              | Ratings and moderated comments                                                              |
+| `08_messages.sql`             | Booking-scoped in-app chat                                                                  |
+| `09_notifications.sql`        | In-app notification feed                                                                    |
+| `10`–`17`                     | Lockout/refresh tokens, password reset, 2FA, visibility, tags, quantity/condition, search   |
+| `18_gap_features.sql`         | Cancellation policies & refunds, provider payouts, user reports, admin audit log, timed suspensions, multi-equipment bundles, message delivery status. Idempotent. |
+
+To apply migration 18 to the database configured in `server/.env`:
+
+```bash
+cd server && npm run migrate
+```
+
+> `npm run migrate` prints the target DB host before running. Check `server/.env` first.
+
+## Real-time, Payments & Moderation Features
+
+- **Live notifications & chat** — Server-Sent Events at `GET /api/v1/realtime/stream?token=<jwt>`; the client opens it automatically.
+- **Cancellation & refunds** — `GET/PUT /listings/:id/cancellation-policy`, `GET /bookings/:id/cancellation-preview`, `POST /bookings/:id/cancel`, `POST /bookings/:id/cancel-by-provider`.
+- **Earnings** — `GET /providers/me/payouts`, `/providers/me/earnings/bookings`, `/providers/me/earnings/summary`, `/providers/me/earnings/export` (CSV).
+- **Public provider profile** — `GET /providers/:id`, `/providers/:id/listings`, `/providers/:id/reviews`; page at `/providers/:id`.
+- **Reports & moderation** — `POST /users/:id/report`; admin: `GET /admin/reports`, `GET /admin/reports/:id`, `PUT /admin/reports/:id/resolve`, `GET /admin/audit-logs`, `PUT /admin/users/:id/suspend` (`days`), `/ban`, `/reinstate`.
+- **NIC review** — `GET /admin/nic-verifications[/:id]`, `PUT /admin/nic-verifications/:id/decision` (note required).
+
+--------------------------- | ---------------------- | ---------------------------------------- |
+| `01_users.sql`              | `users`                | Roles, profiles, NIC verification        |
+| `02_categories.sql`         | `categories`           | Hierarchical service/equipment types     |
+| `03_listings.sql`           | `listings`             | Services and equipment with geo + JSONB  |
+| `04_listing_availability.sql` | `listing_availability` | Date-level availability per listing    |
+| `05_bookings.sql`           | `bookings`             | Booking transactions with bundle support |
+| `06_payments.sql`           | `payments`             | Escrow tracking and gateway references   |
+| `07_reviews.sql`            | `reviews`              | Ratings and moderated comments           |
+| `08_messages.sql`           | `messages`             | Booking-scoped in-app chat               |
+| `09_notifications.sql`      | `notifications`        | In-app notification feed                 |
+
+
+---
+
