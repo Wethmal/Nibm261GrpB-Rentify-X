@@ -13,3 +13,41 @@ const otpService = require('../services/otp.service');
 const crypto = require('crypto');
 const refreshModel = require('../models/refresh_token.model');
 const notificationService = require('../services/notification.service');
+const passwordResetTokenModel = require('../models/password_reset_token.model');
+
+const getCookie = (req, name) => {
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader) return null;
+  const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+    const parts = cookie.split('=');
+    const key = parts[0].trim();
+    const val = parts.slice(1).join('=').trim();
+    if (key) {
+      acc[key] = val;
+    }
+    return acc;
+  }, {});
+  return cookies[name] || null;
+};
+
+const register = async (req, res, next) => {
+  try {
+    const { mobile, email, password, role, nic_number, full_name } = req.body;
+
+    const existingUser = await userModel.findByMobile(mobile);
+    if (existingUser) {
+      return res.status(409).json({ error: 'Mobile already registered' });
+    }
+
+    const password_hash = await authService.hashPassword(password);
+
+    const newUser = await userModel.create({
+      mobile,
+      email,
+      password_hash,
+      role: role.toLowerCase(),
+      nic_number: nic_number || null,
+      status: 'pending_verification',
+      full_name: full_name || null
+    });
+

@@ -22,3 +22,21 @@ router.post('/register', [
   body('nic_number').optional().isString()
 ], validate, authController.register);
 
+// POST /api/v1/auth/login — Authenticate user with email/mobile + password
+router.post('/login', authController.login);
+
+// POST /api/v1/auth/login/2fa/verify — Verify OTP and get full tokens
+router.post('/login/2fa/verify', [
+  body('preAuthToken').notEmpty().withMessage('Pre-auth token is required'),
+  body('otpCode').isLength({ min: 6, max: 6 }).withMessage('OTP must be exactly 6 digits')
+], validate, authController.verify2faLogin);
+
+// PUT /api/v1/auth/2fa/toggle — Enable/disable 2FA for the account
+router.put('/2fa/toggle', authenticate, [
+  body('enabled').isBoolean().withMessage('enabled must be a boolean')
+], validate, authController.toggle2fa);
+
+// POST /api/v1/auth/refresh — Refresh access token using rotation
+router.post('/refresh', authController.refresh);
+
+// POST /api/v1/auth/otp/send — Generate and send OTP via SMS
