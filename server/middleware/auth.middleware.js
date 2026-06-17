@@ -19,3 +19,5 @@
  * @version 1.0.0
  */
 
+const jwt = require('jsonwebtoken');
+

@@ -10,3 +10,16 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+const SALT_ROUNDS = 12;
+
+const hashPassword = async (plainPassword) => {
+  // TODO: Validate password is not empty/null before hashing
+  // TODO: Use bcrypt.hash with SALT_ROUNDS for adaptive hashing
+  return bcrypt.hash(plainPassword, SALT_ROUNDS);
+};
+
+const comparePassword = async (plainPassword, hashedPassword) => {
+  // TODO: Use bcrypt.compare to safely check password match
+  return bcrypt.compare(plainPassword, hashedPassword);
+};
+

@@ -136,3 +136,50 @@ const login = async (req, res, next) => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
+    await refreshModel.create(user.id, refreshTokenString, expiresAt);
+
+    res.cookie('refreshToken', refreshTokenString, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.status(200).json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        name: user.full_name,
+        mobile: user.mobile,
+        profile_photo_url: user.profile_photo_url
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const refresh = async (req, res, next) => {
+  try {
+    const refreshTokenString = getCookie(req, 'refreshToken');
+    if (!refreshTokenString) {
+      return res.status(401).json({ error: 'Refresh token is missing', message: 'Refresh token is missing' });
+    }
+
+    const tokenDoc = await refreshModel.findByToken(refreshTokenString);
+    if (!tokenDoc) {
+      return res.status(401).json({ error: 'Invalid refresh token', message: 'Invalid refresh token' });
+    }
+
+    if (tokenDoc.is_revoked || new Date(tokenDoc.expires_at) < new Date()) {
+      if (!tokenDoc.is_revoked) {
+        await refreshModel.revoke(refreshTokenString);
+      } else {
+        await refreshModel.revokeAllForUser(tokenDoc.user_id);
+      }
+      return res.status(401).json({ error: 'Expired or invalid refresh token', message: 'Expired or invalid refresh token' });
+    }
+

@@ -17,3 +17,19 @@ const create = async (userId, token, expiresAt) => {
   return rows[0];
 };
 
+const findByToken = async (token) => {
+  const { rows } = await query(
+    'SELECT * FROM refresh_tokens WHERE token = $1',
+    [token]
+  );
+  return rows[0] || null;
+};
+
+const revoke = async (token) => {
+  const { rows } = await query(
+    'UPDATE refresh_tokens SET is_revoked = true, updated_at = NOW() WHERE token = $1 RETURNING id',
+    [token]
+  );
+  return rows[0] || null;
+};
+
