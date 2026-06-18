@@ -42,3 +42,20 @@ const update = async (id, updateData) => {
   const values = [];
   let index = 1;
 
+  for (const [key, value] of Object.entries(updateData)) {
+    if (allowedFields.includes(key)) {
+      fields.push(`${key} = $${index}`);
+      values.push(value);
+      index++;
+    }
+  }
+
+  if (fields.length === 0) return null;
+
+  values.push(id);
+  const queryText = `UPDATE users SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${index} RETURNING *`;
+
+  const { rows } = await query(queryText, values);
+  return rows[0] || null;
+};
+

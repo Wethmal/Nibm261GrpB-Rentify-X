@@ -40,3 +40,26 @@ router.put('/2fa/toggle', authenticate, [
 router.post('/refresh', authController.refresh);
 
 // POST /api/v1/auth/otp/send — Generate and send OTP via SMS
+router.post('/otp/send', [
+  body('mobile').notEmpty().withMessage('Mobile number is required')
+], validate, authController.sendOtp);
+
+// POST /api/v1/auth/otp/verify — Verify OTP code for registration or 2FA
+router.post('/otp/verify', [
+  body('mobile').notEmpty().withMessage('Mobile number is required'),
+  body('otpCode').isLength({ min: 6, max: 6 }).withMessage('OTP must be exactly 6 digits')
+], validate, authController.verifyOtp);
+
+// POST /api/v1/auth/forgot-password — Request password reset (sends OTP/link)
+router.post('/forgot-password', [
+  body('email').optional().isEmail().withMessage('Valid email is required'),
+  body('mobile').optional().matches(/^(?:\+94|0)7\d{8}$/).withMessage('Valid mobile number is required')
+], validate, authController.requestPasswordReset);
+
+// POST /api/v1/auth/reset-password — Complete password reset with token + new password
+router.post('/reset-password', [
+  body('token').notEmpty().withMessage('Token is required'),
+  body('newPassword').isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+], validate, authController.resetPassword);
+
+module.exports = router;

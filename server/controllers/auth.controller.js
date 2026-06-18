@@ -51,3 +51,40 @@ const register = async (req, res, next) => {
       full_name: full_name || null
     });
 
+    const token = authService.generateToken(
+      { userId: newUser.id, role: newUser.role, status: newUser.status },
+      { expiresIn: '15m' }
+    );
+
+    res.status(201).json({
+      message: 'Registration successful. Verify OTP.',
+      userId: newUser.id,
+      token
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const login = async (req, res, next) => {
+  try {
+    const { identifier, email, mobile, password } = req.body;
+    const loginId = identifier || email || mobile;
+
+    if (!loginId || !password) {
+      return res.status(400).json({ error: 'Identifier and password are required' });
+    }
+
+    const user = await userModel.findByEmailOrMobile(loginId);
+    if (!user) {
+      return res.status(401).json({ error: 'Wrong password', message: 'Wrong password' });
+    }
+
+    if (user.status === 'suspended') {
+      const chk = await require('../services/restriction.service').checkRestriction(user.id);
+      if (!chk.restricted) user.status = 'verified';
+    }
+    if (user.status === 'suspended' || user.status === 'banned') {
+      return res.status(403).json({ error: 'Account suspended/banned', message: user.status_reason ? `Account suspended/banned: ${user.status_reason}` : 'Account suspended/banned', code: 'ACCOUNT_RESTRICTED', until: user.suspended_until || null });
+    }
+

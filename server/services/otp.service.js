@@ -47,3 +47,28 @@ const verify = async (identifier, code) => {
     return { valid: false, message: 'OTP expired. Request a new one.' };
   }
 
+  if (stored.attempts >= MAX_ATTEMPTS) {
+    otpStore.delete(identifier);
+    return { valid: false, message: 'Max verification attempts reached. Account lockout.' };
+  }
+
+  stored.attempts += 1;
+
+  const isValid = await bcrypt.compare(String(code), stored.codeHash);
+  if (!isValid) {
+    if (stored.attempts >= MAX_ATTEMPTS) {
+      otpStore.delete(identifier);
+      return { valid: false, message: 'Max verification attempts reached. OTP invalidated.' };
+    }
+    return { valid: false, message: `Invalid OTP code. ${MAX_ATTEMPTS - stored.attempts} attempts remaining.` };
+  }
+
+  otpStore.delete(identifier);
+  return { valid: true, message: 'OTP verified successfully.' };
+};
+
+const resend = async (identifier) => {
+  return await generate(identifier);
+};
+
+module.exports = { generate, verify, resend };
