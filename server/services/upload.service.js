@@ -9,3 +9,5 @@
  */
 const cloudinary = require('cloudinary').v2;
 
+// TODO: Uncomment once Cloudinary credentials are configured in .env
+// cloudinary.config({

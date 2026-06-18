@@ -11,3 +11,29 @@
 const userModel = require('../models/user.model');
 const sharp = require('sharp');
 const path = require('path');
+const fs = require('fs').promises;
+
+const getProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const { password_hash, ...safeUser } = user;
+    res.status(200).json(safeUser);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateProfile = async (req, res, next) => {
+  try {
+    const targetUserId = req.params.id;
+    const requestUserId = req.user.userId;
+    const requestUserRole = req.user.role;
+
+    if (targetUserId !== requestUserId && requestUserRole !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You are not allowed to edit this profile' });
+    }
+

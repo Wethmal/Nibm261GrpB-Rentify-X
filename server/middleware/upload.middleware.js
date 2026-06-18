@@ -71,3 +71,21 @@ const createDiskStorage = (folderName) => multer.diskStorage({
   }
 });
 
+// Cloudinary Storage engines
+const nicCloudinaryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'rentify-uploads/nic',
+    resource_type: 'auto',
+    public_id: (req, file) => crypto.randomUUID()
+  },
+});
+
+const avatarCloudinaryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'rentify-uploads/avatars',
+    resource_type: 'auto'
+  }
+});
+

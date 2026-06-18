@@ -92,3 +92,45 @@ const updateNicDocument = async (id, url) => {
   return rows[0];
 };
 
+const findByEmailOrMobile = async (identifier) => {
+  const { rows } = await query(
+    'SELECT * FROM users WHERE (email = $1 OR mobile = $1) AND is_deleted = false',
+    [identifier]
+  );
+  return rows[0] || null;
+};
+
+const incrementFailedAttempts = async (id) => {
+  const { rows } = await query(
+    `UPDATE users 
+     SET failed_attempts = failed_attempts + 1,
+         locked_until = CASE 
+           WHEN failed_attempts + 1 >= 3 THEN NOW() + INTERVAL '30 minutes'
+           ELSE locked_until
+         END
+     WHERE id = $1
+     RETURNING failed_attempts, locked_until`,
+    [id]
+  );
+  return rows[0];
+};
+
+const resetFailedAttempts = async (id) => {
+  const { rows } = await query(
+    `UPDATE users 
+     SET failed_attempts = 0, locked_until = NULL 
+     WHERE id = $1 
+     RETURNING failed_attempts, locked_until`,
+    [id]
+  );
+  return rows[0];
+};
+
+const updatePassword = async (id, passwordHash) => {
+  const { rows } = await query(
+    'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2 RETURNING id',
+    [passwordHash, id]
+  );
+  return rows[0] || null;
+};
+

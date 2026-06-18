@@ -10,3 +10,8 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/user.controller');
+const authenticate = require('../middleware/auth.middleware');
+const { uploadNic } = require('../middleware/upload.middleware');
+
+
+const { body } = require('express-validator');
