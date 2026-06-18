@@ -72,3 +72,70 @@ export function AuthProvider({ children }) {
     const { token: returnedToken, user: loggedUser } = response.data;
     const requires2FA = response.data.requires2FA || response.data.requires2fa;
 
+    if (requires2FA) {
+      return {
+        requires2FA: true,
+        preAuthToken: response.data.preAuthToken,
+        devCode: response.data.devCode,
+        userId: loggedUser?.id || response.data.userId
+      };
+    }
+
+    if (returnedToken) {
+      if (rememberMe) {
+        localStorage.setItem('Rentify_token', returnedToken);
+        sessionStorage.removeItem('Rentify_token');
+      } else {
+        sessionStorage.setItem('Rentify_token', returnedToken);
+        localStorage.removeItem('Rentify_token');
+      }
+      setToken(returnedToken);
+      setUser(loggedUser);
+    }
+    return { user: loggedUser, token: returnedToken };
+  }, []);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('Rentify_token');
+    sessionStorage.removeItem('Rentify_token');
+    setToken(null);
+    setUser(null);
+  }, []);
+
+  const register = useCallback(async (userData) => {
+    const response = await axiosInstance.post('/auth/register', userData);
+    return response.data;
+  }, []);
+
+  const loginSuccess = useCallback((returnedToken, loggedUser, rememberMe) => {
+    if (rememberMe) {
+      localStorage.setItem('Rentify_token', returnedToken);
+      sessionStorage.removeItem('Rentify_token');
+    } else {
+      sessionStorage.setItem('Rentify_token', returnedToken);
+      localStorage.removeItem('Rentify_token');
+    }
+    setToken(returnedToken);
+    setUser(loggedUser);
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      loading,
+      isAuthenticated: !!token && !!user,
+      login,
+      logout,
+      register,
+      loginSuccess,
+    }),
+    [user, token, loading, login, logout, register, loginSuccess]
+  );
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
