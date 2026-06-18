@@ -15,3 +15,9 @@ const { uploadNic } = require('../middleware/upload.middleware');
 
 
 const { body } = require('express-validator');
+const validate = require('../middleware/validate.middleware');
+
+// POST /api/v1/users/:id/report — Report an abusive/fraudulent user
+router.post('/:id/report', authenticate, require('../controllers/report.controller').submitReport);
+
+// GET /api/v1/users/me — Get current authenticated user's profile

@@ -134,3 +134,32 @@ const updatePassword = async (id, passwordHash) => {
   return rows[0] || null;
 };
 
+const update2faStatus = async (id, isEnabled) => {
+  const { rows } = await query(
+    'UPDATE users SET is_2fa_enabled = $1, updated_at = NOW() WHERE id = $2 RETURNING id, is_2fa_enabled',
+    [isEnabled, id]
+  );
+  return rows[0] || null;
+};
+
+const findAdmins = async () => {
+  const { rows } = await query("SELECT * FROM users WHERE role = 'admin' AND is_deleted = false");
+  return rows;
+};
+
+module.exports = {
+  findByEmail,
+  findByMobile,
+  findById,
+  create,
+  update,
+  updateStatus,
+  updateTrustScore,
+  updateNicDocument,
+  findByEmailOrMobile,
+  incrementFailedAttempts,
+  resetFailedAttempts,
+  updatePassword,
+  update2faStatus,
+  findAdmins
+};

@@ -37,3 +37,11 @@ const updateProfile = async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden', message: 'You are not allowed to edit this profile' });
     }
 
+    const { full_name, bio, address, district, country, mobile, visibility_settings } = req.body;
+
+    // Explicitly prevent role and status from being updated via this endpoint, even if passed
+    const updateData = { full_name, bio, address, district, country, mobile, visibility_settings };
+
+    // Remove undefined values
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
