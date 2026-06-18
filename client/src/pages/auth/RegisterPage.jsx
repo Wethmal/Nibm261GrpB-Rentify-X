@@ -186,3 +186,313 @@ function RegisterPage() {
           role: currentRole.toLowerCase()
         });
         
+        if (regRes.data?.userId) {
+          setRegisteredUserId(regRes.data.userId);
+        }
+        if (regRes.data?.token) {
+          setRegisteredUserToken(regRes.data.token);
+        }
+
+        // 2. Send OTP
+        const otpRes = await axiosInstance.post('/auth/otp/send', { mobile: currentMobile });
+        if (otpRes.data?.devCode) {
+          setValue('otp', otpRes.data.devCode);
+        }
+
+        setStep(2);
+        setCountdown(600);
+        setResendCooldown(60);
+      } catch (err) {
+        if (err.response?.status === 409) {
+          setApiError("Mobile already registered. Please log in.");
+        } else {
+          setApiError(err.response?.data?.error || err.message || "Registration failed");
+        }
+      } finally {
+        setLoading(false);
+      }
+    } else if (step === 2) {
+      setLoading(true);
+      try {
+        // Verify OTP
+        const res = await axiosInstance.post('/auth/otp/verify', { mobile: currentMobile, otpCode: data.otp });
+
+        if (currentRole === 'Consumer') {
+          // Consumers do not need NIC. Finish and login!
+          loginSuccess(res.data.token, res.data.user, false);
+          navigate('/');
+        } else {
+          // Providers proceed to NIC Upload
+          if (res.data.user?.id) {
+            setRegisteredUserId(res.data.user.id);
+          }
+          if (res.data.token) {
+            setRegisteredUserToken(res.data.token);
+          }
+          setStep(3);
+        }
+      } catch (err) {
+        setApiError(err.response?.data?.error || err.message || "OTP verification failed");
+      } finally {
+        setLoading(false);
+      }
+    } else if (step === 3) {
+      if (!file) {
+        setFileError("NIC document is required");
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        await axiosInstance.post(`/users/${registeredUserId}/nic-upload`, formData, {
+          headers: {
+            'Authorization': `Bearer ${registeredUserToken}`
+          }
+        });
+
+        alert("Registration Successful!");
+        navigate('/login');
+      } catch (err) {
+        setApiError(err.response?.data?.error || err.message || "NIC upload failed");
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  return (
+    <div className="register-container">
+      <div className="register-card">
+        <div className="register-header">
+          <h1>Create your account</h1>
+          <p>Join Rentify to connect with trusted services and rentals.</p>
+        </div>
+
+        <div className="step-indicator">
+          <div className={`step-dot ${step >= 1 ? 'completed' : ''}`}>1</div>
+          <div className={`step-dot ${step >= 2 ? 'completed' : ''}`}>2</div>
+          {watchRole === 'Provider' && (
+            <div className={`step-dot ${step >= 3 ? 'active' : ''}`}>3</div>
+          )}
+        </div>
+
+        {apiError && (
+          <div className="alert-error" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-error)', backgroundColor: 'rgba(220, 53, 69, 0.08)', padding: '0.75rem 1rem', borderRadius: 'var(--border-radius)', border: '1px solid rgba(220, 53, 69, 0.2)' }}>
+            <ShieldAlert size={18} />
+            <span>{typeof apiError === 'object' ? (apiError.message || JSON.stringify(apiError)) : String(apiError)}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)}>
+
+          {/* STEP 1: Basic Info & Role */}
+          {step === 1 && (
+            <div className="step-content">
+              <div className="form-group">
+                <label className="form-label">I want to register as a:</label>
+                <div className="role-selector">
+                  <div
+                    className={`role-option ${watchRole === 'Consumer' ? 'selected' : ''}`}
+                    onClick={() => setValue('role', 'Consumer')}
+                  >
+                    <User size={24} color={watchRole === 'Consumer' ? 'var(--color-primary-blue)' : 'var(--color-slate-gray)'} />
+                    <span className="role-title">Consumer</span>
+                    <span className="role-desc">Book services & rent items</span>
+                  </div>
+                  <div
+                    className={`role-option ${watchRole === 'Provider' ? 'selected' : ''}`}
+                    onClick={() => setValue('role', 'Provider')}
+                  >
+                    <Briefcase size={24} color={watchRole === 'Provider' ? 'var(--color-primary-blue)' : 'var(--color-slate-gray)'} />
+                    <span className="role-title">Provider</span>
+                    <span className="role-desc">Offer my services/items</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="fullName">Full Name</label>
+                <input
+                  type="text"
+                  id="fullName"
+                  className={`form-input ${errors.fullName ? 'error' : ''}`}
+                  placeholder="Sasundul Wanasinghe"
+                  {...register("fullName")}
+                />
+                {errors.fullName && <span className="error-message">{errors.fullName.message}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="mobile">Mobile Number</label>
+                <input
+                  type="tel"
+                  id="mobile"
+                  className={`form-input ${errors.mobile ? 'error' : ''}`}
+                  placeholder="+94 7X XXX XXXX"
+                  {...register("mobile")}
+                />
+                {errors.mobile && <span className="error-message">{errors.mobile.message}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="email">Email Address</label>
+                <input
+                  type="email"
+                  id="email"
+                  className={`form-input ${errors.email ? 'error' : ''}`}
+                  placeholder="sasuduln@gmail.com"
+                  {...register("email")}
+                />
+                {errors.email && <span className="error-message">{errors.email.message}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  className={`form-input ${errors.password ? 'error' : ''}`}
+                  placeholder="Create a strong password"
+                  {...register("password")}
+                />
+
+                <div className="password-strength">
+                  {[1, 2, 3, 4].map((level) => (
+                    <div
+                      key={level}
+                      className="strength-bar"
+                      style={{
+                        backgroundColor: passwordStrength >= level
+                          ? getStrengthColor(passwordStrength)
+                          : 'var(--color-light-platinum)'
+                      }}
+                    />
+                  ))}
+                </div>
+                <span className="strength-text" style={{ color: getStrengthColor(passwordStrength) }}>
+                  {getStrengthLabel(passwordStrength)}
+                </span>
+
+                {errors.password && <span className="error-message">{errors.password.message}</span>}
+              </div>
+
+              <button type="submit" className="btn-primary" disabled={loading}>
+                {loading ? <Loader2 className="spinner" size={18} /> : (
+                  <>Continue <ArrowRight size={18} style={{ verticalAlign: 'middle', marginLeft: '4px' }} /></>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* STEP 2: OTP Verification */}
+          {step === 2 && (
+            <div className="step-content otp-container">
+              <h3 style={{ marginBottom: '1rem', color: 'var(--color-primary-navy)' }}>Verify Mobile Number</h3>
+              <p style={{ color: 'var(--color-slate-gray)', marginBottom: '2rem', fontSize: '0.9rem' }}>
+                We sent a 6-digit code to <strong>{watch("mobile")}</strong>. <br />
+                It expires in {formatTime(countdown)}.
+              </p>
+
+              <div className="form-group" style={{ width: '100%' }}>
+                <input
+                  type="text"
+                  className={`form-input otp-input ${errors.otp ? 'error' : ''}`}
+                  placeholder="------"
+                  maxLength={6}
+                  autoFocus
+                  {...register("otp")}
+                />
+                {errors.otp && <span className="error-message">{errors.otp.message}</span>}
+              </div>
+
+              <div className="otp-actions">
+                Didn't receive the code? <br />
+                <button
+                  type="button"
+                  className="resend-btn"
+                  disabled={resendCooldown > 0}
+                  onClick={handleResendOTP}
+                >
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', width: '100%', marginTop: '2rem' }}>
+                <button type="button" className="btn-secondary" onClick={handlePrevStep}>
+                  <ArrowLeft size={18} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Back
+                </button>
+                <button type="submit" className="btn-primary" disabled={loading}>
+                  {loading ? <Loader2 className="spinner" size={18} /> : (
+                    <>Verify <CheckCircle2 size={18} style={{ verticalAlign: 'middle', marginLeft: '4px' }} /></>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: NIC Upload */}
+          {step === 3 && (
+            <div className="step-content">
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--color-primary-navy)' }}>Identity Verification</h3>
+              <p style={{ color: 'var(--color-slate-gray)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                To build trust in our community, we require a valid National Identity Card (NIC).
+              </p>
+
+              <div className="form-group">
+                <label className="form-label">Upload NIC Document</label>
+
+                {!file ? (
+                  <div {...getRootProps()} className={`dropzone ${isDragActive ? 'active' : ''}`}>
+                    <input {...getInputProps()} />
+                    <UploadCloud className="dropzone-icon" size={48} />
+                    <p className="dropzone-text">
+                      {isDragActive ? "Drop the file here..." : "Drag & drop your NIC file here"}
+                    </p>
+                    <p className="dropzone-subtext">or click to browse (JPG, PNG, PDF up to 5MB)</p>
+                  </div>
+                ) : (
+                  <div className="file-preview">
+                    <div className="file-info">
+                      <FileText size={24} color="var(--color-primary-blue)" />
+                      <div>
+                        <span style={{ display: 'block', fontWeight: 500 }}>{file.name}</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-slate-gray)' }}>
+                          {(file.size / (1024 * 1024)).toFixed(2)} MB
+                        </span>
+                      </div>
+                    </div>
+                    <button type="button" className="remove-file-btn" onClick={() => setFile(null)}>
+                      <X size={20} />
+                    </button>
+                  </div>
+                )}
+
+                {fileError && <span className="error-message">{fileError}</span>}
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', width: '100%', marginTop: '2rem' }}>
+                <button type="button" className="btn-secondary" onClick={handlePrevStep}>
+                  <ArrowLeft size={18} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> Back
+                </button>
+                <button type="submit" className="btn-primary">
+                  Complete Registration
+                </button>
+              </div>
+            </div>
+          )}
+        </form>
+
+        {step === 1 && (
+          <div className="login-link">
+            Already have an account? <Link to="/login">Log in here</Link>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default RegisterPage;

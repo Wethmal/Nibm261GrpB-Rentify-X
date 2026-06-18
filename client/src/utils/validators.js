@@ -68,3 +68,52 @@ export function validateMobile(mobile) {
  * @param {string} nic - NIC number to validate
  * @returns {{ valid: boolean, message: string }}
  */
+export function validateNIC(nic) {
+  // TODO: Old format: 9 digits followed by V or X (e.g., 901234567V)
+  // TODO: New format: exactly 12 digits (e.g., 200012345678)
+  // TODO: Trim and uppercase before validation
+  if (!nic || !nic.trim()) {
+    return { valid: false, message: 'NIC number is required' };
+  }
+  const oldFormat = /^[0-9]{9}[vVxX]$/;
+  const newFormat = /^[0-9]{12}$/;
+  const trimmed = nic.trim();
+  if (!oldFormat.test(trimmed) && !newFormat.test(trimmed)) {
+    return { valid: false, message: 'Invalid NIC format. Use 9-digit+V/X or 12-digit format' };
+  }
+  return { valid: true, message: '' };
+}
+
+/**
+ * Validates password strength.
+ * @param {string} password - Password to validate
+ * @returns {{ valid: boolean, message: string }}
+ */
+export function validatePassword(password) {
+  // TODO: Minimum 8 characters
+  // TODO: At least one uppercase letter, one lowercase letter, one digit
+  // TODO: At least one special character (!@#$%^&*)
+  // TODO: Return specific messages for each missing requirement
+  if (!password) {
+    return { valid: false, message: 'Password is required' };
+  }
+  if (password.length < 8) {
+    return { valid: false, message: 'Password must be at least 8 characters' };
+  }
+  return { valid: true, message: '' };
+}
+
+/**
+ * Validates that a field value is not empty.
+ * @param {string} value - Field value to check
+ * @param {string} fieldName - Human-readable field name for error message
+ * @returns {{ valid: boolean, message: string }}
+ */
+export function validateRequired(value, fieldName = 'This field') {
+  // TODO: Handle string, number, array, and object types
+  // TODO: Trim strings before checking emptiness
+  if (value === null || value === undefined || (typeof value === 'string' && !value.trim())) {
+    return { valid: false, message: `${fieldName} is required` };
+  }
+  return { valid: true, message: '' };
+}
