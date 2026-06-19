@@ -183,3 +183,29 @@ const refresh = async (req, res, next) => {
       return res.status(401).json({ error: 'Expired or invalid refresh token', message: 'Expired or invalid refresh token' });
     }
 
+    await refreshModel.revoke(refreshTokenString);
+
+    const user = await userModel.findById(tokenDoc.user_id);
+    if (!user) {
+      return res.status(401).json({ error: 'User not found', message: 'User not found' });
+    }
+
+    if (user.status === 'suspended') {
+      const chk = await require('../services/restriction.service').checkRestriction(user.id);
+      if (!chk.restricted) user.status = 'verified';
+    }
+    if (user.status === 'suspended' || user.status === 'banned') {
+      return res.status(403).json({ error: 'Account suspended/banned', message: user.status_reason ? `Account suspended/banned: ${user.status_reason}` : 'Account suspended/banned', code: 'ACCOUNT_RESTRICTED', until: user.suspended_until || null });
+    }
+
+    const newAccessToken = authService.generateToken(
+      { userId: user.id, role: user.role, status: user.status },
+      { expiresIn: '24h' }
+    );
+
+    const newRefreshTokenString = crypto.randomBytes(40).toString('hex');
+    const newExpiresAt = new Date();
+    newExpiresAt.setDate(newExpiresAt.getDate() + 7);
+
+    await refreshModel.create(user.id, newRefreshTokenString, newExpiresAt);
+

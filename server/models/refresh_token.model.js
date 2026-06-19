@@ -33,3 +33,12 @@ const revoke = async (token) => {
   return rows[0] || null;
 };
 
+const revokeAllForUser = async (userId) => {
+  const { rows } = await query(
+    'UPDATE refresh_tokens SET is_revoked = true, updated_at = NOW() WHERE user_id = $1 RETURNING id',
+    [userId]
+  );
+  return rows;
+};
+
+module.exports = { create, findByToken, revoke, revokeAllForUser };

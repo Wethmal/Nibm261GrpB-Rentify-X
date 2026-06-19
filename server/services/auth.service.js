@@ -23,3 +23,15 @@ const comparePassword = async (plainPassword, hashedPassword) => {
   return bcrypt.compare(plainPassword, hashedPassword);
 };
 
+const generateToken = (payload, options = {}) => {
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: options.expiresIn || process.env.JWT_EXPIRES_IN || '7d',
+  });
+};
+
+const verifyToken = (token) => {
+  // TODO: Verify and decode token, throw error if invalid/expired
+  return jwt.verify(token, process.env.JWT_SECRET);
+};
+
+module.exports = { hashPassword, comparePassword, generateToken, verifyToken };
