@@ -24,3 +24,12 @@
  */
 
 import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+
+// --- Layout Components ---
+import Navbar from './components/layout/Navbar.jsx';
+import Footer from './components/layout/Footer.jsx';
+import ProtectedRoute from './components/common/ProtectedRoute.jsx';
+
+// --- Auth Pages ---
+import RegisterPage from './pages/auth/RegisterPage.jsx';
