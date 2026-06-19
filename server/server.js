@@ -27,3 +27,18 @@
 
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+require('dotenv').config();
+const { query } = require('./config/db');
+
+// Ensure database booking_status_enum contains 'rejected'
+query("ALTER TYPE booking_status_enum ADD VALUE IF NOT EXISTS 'rejected'").catch(() => {});
+
+// Warn (do not crash) when the gap-features migration has not been applied to this database
+query("SELECT to_regclass('public.provider_payouts') AS t")
+  .then((r) => { if (!r.rows[0].t) console.warn('[Rentify] Schema is missing migration 18 - run `npm run migrate` in /server'); })
+  .catch(() => {});
+
+const path = require('path');
+
+// --- Import Route Modules ---
