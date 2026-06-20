@@ -112,3 +112,117 @@ describe('Authentication & Authorization Integration Tests', () => {
         .send(lockoutUser);
       expect(regRes.statusCode).toEqual(201);
 
+      // Verify and set status to verified
+      await query("UPDATE users SET status = 'verified' WHERE id = $1", [regRes.body.userId]);
+
+      // 1st failed attempt
+      let res = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ identifier: lockoutUser.email, password: 'wrongpassword' });
+      expect(res.statusCode).toEqual(401);
+
+      // 2nd failed attempt
+      res = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ identifier: lockoutUser.email, password: 'wrongpassword' });
+      expect(res.statusCode).toEqual(401);
+
+      // 3rd failed attempt -> lock out
+      res = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ identifier: lockoutUser.email, password: 'wrongpassword' });
+      expect(res.statusCode).toEqual(423);
+      expect(res.body).toHaveProperty('status', 'suspended temporarily');
+      expect(res.body).toHaveProperty('unlock_at');
+
+      // Subsequent attempt with CORRECT password should still return 423
+      res = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ identifier: lockoutUser.email, password: lockoutUser.password });
+      expect(res.statusCode).toEqual(423);
+    });
+  });
+
+  describe('2FA Login Flow', () => {
+    let preAuthToken;
+
+    it('should toggle 2FA on for user', async () => {
+      const res = await request(app)
+        .put('/api/v1/auth/2fa/toggle')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ enabled: true });
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.is_2fa_enabled).toBe(true);
+    });
+
+    it('should require 2FA during login when enabled', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ identifier: testUser.email, password: testUser.password });
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body).toHaveProperty('requires2fa', true);
+      expect(res.body).toHaveProperty('preAuthToken');
+      preAuthToken = res.body.preAuthToken;
+    });
+
+    it('should verify 2FA login with correct OTP', async () => {
+      const otpService = require('../services/otp.service');
+      const verifySpy = jest.spyOn(otpService, 'verify').mockResolvedValue({ valid: true });
+
+      const res = await request(app)
+        .post('/api/v1/auth/login/2fa/verify')
+        .send({ preAuthToken, otpCode: '123456' });
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body).toHaveProperty('token');
+      expect(res.body.user).toHaveProperty('id');
+
+      verifySpy.mockRestore();
+    });
+
+    it('should disable 2FA for user', async () => {
+      const res = await request(app)
+        .put('/api/v1/auth/2fa/toggle')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ enabled: false });
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.is_2fa_enabled).toBe(false);
+    });
+  });
+
+  describe('POST /api/v1/auth/refresh', () => {
+    it('should issue a new access token and rotate refresh token cookie', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/refresh')
+        .set('Cookie', [refreshTokenCookie]);
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body).toHaveProperty('token');
+      expect(res.body.token).not.toEqual(accessToken);
+
+      const cookies = res.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+      const newRefreshTokenCookie = cookies.find(cookie => cookie.includes('refreshToken='));
+      expect(newRefreshTokenCookie).toBeDefined();
+      expect(newRefreshTokenCookie).not.toEqual(refreshTokenCookie);
+
+      // Save the new cookie for potential reuse checks
+      refreshTokenCookie = newRefreshTokenCookie;
+    });
+
+    it('should reject refresh request if cookie is missing', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/refresh');
+      expect(res.statusCode).toEqual(401);
+    });
+  });
+
+  describe('Password Reset Flow', () => {
+    it('POST /api/v1/auth/forgot-password should return 200 for existing user and generate token in DB', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/forgot-password')
+        .send({ email: testUser.email });
+
