@@ -56,3 +56,63 @@ const getIsCloudinaryConfigured = () => {
   return isConfigured;
 };
 
+const maxSizeMB = parseInt(process.env.UPLOAD_MAX_SIZE_MB, 10) || 5;
+
+// Local Disk Storage fallback creators
+const createDiskStorage = (folderName) => multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '..', 'public', 'uploads', folderName);
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, `${crypto.randomUUID()}${ext}`);
+  }
+});
+
+// Cloudinary Storage engines
+const nicCloudinaryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'rentify-uploads/nic',
+    resource_type: 'auto',
+    public_id: (req, file) => crypto.randomUUID()
+  },
+});
+
+const avatarCloudinaryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'rentify-uploads/avatars',
+    resource_type: 'auto'
+  }
+});
+
+const listingCloudinaryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'rentify-uploads/listings',
+    resource_type: 'auto'
+  }
+});
+
+const imageFileFilter = (req, file, cb) => {
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/pjpeg'];
+  if (allowedTypes.includes(file.mimetype.toLowerCase())) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only JPEG, PNG, and WebP are allowed.'), false);
+  }
+};
+
+const nicFileFilter = (req, file, cb) => {
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+  if (allowedTypes.includes(file.mimetype.toLowerCase())) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only JPEG, PNG, WebP, and PDF are allowed.'), false);
+  }
+};
+
+// Cloudinary multers

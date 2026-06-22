@@ -59,3 +59,107 @@ const update = async (id, updateData) => {
   return rows[0] || null;
 };
 
+const updateStatus = async (id, status, reason = null) => {
+  try {
+    const { rows } = await query(
+      'UPDATE users SET status = $1, status_reason = $2, updated_at = NOW() WHERE id = $3 RETURNING *',
+      [status, reason, id]
+    );
+    return rows[0];
+  } catch (err) {
+    // Graceful fallback for databases where the status_reason column hasn't been added yet
+    if (err.message && err.message.includes('column "status_reason"')) {
+      const { rows } = await query(
+        'UPDATE users SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+        [status, id]
+      );
+      return rows[0];
+    }
+    throw err;
+  }
+};
+
+const updateTrustScore = async (id, score) => {
+  const { rows } = await query(
+    'UPDATE users SET trust_score = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+    [score, id]
+  );
+  return rows[0] || null;
+};
+
+const updateNicDocument = async (id, url) => {
+  const { rows } = await query('UPDATE users SET nic_document_url = $1 WHERE id = $2 RETURNING id, nic_document_url', [url, id]);
+  return rows[0];
+};
+
+const findByEmailOrMobile = async (identifier) => {
+  const { rows } = await query(
+    'SELECT * FROM users WHERE (email = $1 OR mobile = $1) AND is_deleted = false',
+    [identifier]
+  );
+  return rows[0] || null;
+};
+
+const incrementFailedAttempts = async (id) => {
+  const { rows } = await query(
+    `UPDATE users 
+     SET failed_attempts = failed_attempts + 1,
+         locked_until = CASE 
+           WHEN failed_attempts + 1 >= 3 THEN NOW() + INTERVAL '30 minutes'
+           ELSE locked_until
+         END
+     WHERE id = $1
+     RETURNING failed_attempts, locked_until`,
+    [id]
+  );
+  return rows[0];
+};
+
+const resetFailedAttempts = async (id) => {
+  const { rows } = await query(
+    `UPDATE users 
+     SET failed_attempts = 0, locked_until = NULL 
+     WHERE id = $1 
+     RETURNING failed_attempts, locked_until`,
+    [id]
+  );
+  return rows[0];
+};
+
+const updatePassword = async (id, passwordHash) => {
+  const { rows } = await query(
+    'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2 RETURNING id',
+    [passwordHash, id]
+  );
+  return rows[0] || null;
+};
+
+const update2faStatus = async (id, isEnabled) => {
+  const { rows } = await query(
+    'UPDATE users SET is_2fa_enabled = $1, updated_at = NOW() WHERE id = $2 RETURNING id, is_2fa_enabled',
+    [isEnabled, id]
+  );
+  return rows[0] || null;
+};
+
+const findAdmins = async () => {
+  const { rows } = await query("SELECT * FROM users WHERE role = 'admin' AND is_deleted = false");
+  return rows;
+};
+
+module.exports = {
+  findByEmail,
+  findByMobile,
+  findById,
+  create,
+  update,
+  updateStatus,
+  updateTrustScore,
+  updateNicDocument,
+  findByEmailOrMobile,
+  incrementFailedAttempts,
+  resetFailedAttempts,
+  updatePassword,
+  update2faStatus,
+  findAdmins
+};
