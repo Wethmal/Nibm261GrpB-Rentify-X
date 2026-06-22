@@ -116,3 +116,7 @@ const nicFileFilter = (req, file, cb) => {
 };
 
 // Cloudinary multers
+const cloudUploadNic = multer({ storage: nicCloudinaryStorage, limits: { fileSize: maxSizeMB * 1024 * 1024 }, fileFilter: nicFileFilter }).single('file');
+const cloudUploadSingleAvatar = multer({ storage: avatarCloudinaryStorage, limits: { fileSize: 2 * 1024 * 1024 }, fileFilter: imageFileFilter }).single('file');
+const cloudUploadMultipleListings = multer({ storage: listingCloudinaryStorage, limits: { fileSize: 8 * 1024 * 1024 }, fileFilter: imageFileFilter }).array('photos', 10);
+
