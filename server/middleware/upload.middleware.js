@@ -125,3 +125,22 @@ const diskUploadNic = multer({ storage: createDiskStorage('nic'), limits: { file
 const diskUploadSingleAvatar = multer({ storage: createDiskStorage('avatars'), limits: { fileSize: 2 * 1024 * 1024 }, fileFilter: imageFileFilter }).single('file');
 const diskUploadMultipleListings = multer({ storage: createDiskStorage('listings'), limits: { fileSize: 8 * 1024 * 1024 }, fileFilter: imageFileFilter }).array('photos', 10);
 
+const wrapUpload = (cloudMulter, diskMulter, fieldName) => {
+  return (req, res, next) => {
+    const isCloud = getIsCloudinaryConfigured();
+    const activeMulter = isCloud ? cloudMulter : diskMulter;
+
+    activeMulter(req, res, (err) => {
+      if (err) {
+        console.error(`[Upload Error - ${fieldName}]:`, err.message || err);
+        return res.status(500).json({
+          error: 'Upload Failed',
+          message: err.message || 'File upload failed. Please check storage configuration.'
+        });
+      }
+      next();
+    });
+  };
+};
+
+const uploadNic = wrapUpload(cloudUploadNic, diskUploadNic, 'nic');

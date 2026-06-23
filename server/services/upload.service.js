@@ -25,3 +25,16 @@ const uploadImage = async (fileBuffer, folder = 'Rentify/general') => {
   throw new Error('uploadImage not implemented — configure Cloudinary credentials first');
 };
 
+const deleteImage = async (publicId) => {
+  // TODO: Delete image from Cloudinary by publicId
+  // TODO: Handle "not found" gracefully (image already deleted)
+  throw new Error('deleteImage not implemented — configure Cloudinary credentials first');
+};
+
+const getOptimizedUrl = (publicId, options = {}) => {
+  // TODO: Generate Cloudinary URL with transformations (width, height, crop, quality)
+  // TODO: Support thumbnail generation for listing grids
+  // TODO: Return the formatted URL string
+  return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/${publicId}`;
+};
+

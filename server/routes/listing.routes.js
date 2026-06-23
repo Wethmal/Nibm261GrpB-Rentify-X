@@ -11,3 +11,11 @@ const express = require('express');
 const router = express.Router();
 const listingController = require('../controllers/listing.controller');
 const authenticate = require('../middleware/auth.middleware');
+const authorize = require('../middleware/role.middleware');
+const multer = require('multer');
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 }
+});
+

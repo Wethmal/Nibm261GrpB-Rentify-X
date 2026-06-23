@@ -76,3 +76,37 @@ const create = async (listingData) => {
     RETURNING *
   `;
 
+  const values = [
+    provider_id,
+    category_id,
+    title,
+    description,
+    type,
+    status,
+    price_per_unit,
+    unit_label,
+    deposit_amount,
+    JSON.stringify(photos),
+    district,
+    geo_lat,
+    geo_lng,
+    condition,
+    quantity_available,
+    JSON.stringify(tags),
+    JSON.stringify(specifications)
+  ];
+
+  const result = await query(sql, values);
+  return result.rows[0];
+};
+
+const update = async (id, updateData) => {
+  const allowedFields = [
+    'title', 'description', 'category_id', 'price_per_unit', 'unit_label', 
+    'deposit_amount', 'photos', 'tags', 'district', 'geo_lat', 'geo_lng', 
+    'condition', 'quantity', 'quantity_available', 'specifications', 'status'
+  ];
+  const fields = [];
+  const values = [];
+  let index = 1;
+

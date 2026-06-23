@@ -51,3 +51,28 @@ const getAll = async (req, res, next) => {
     const limit = parseInt(req.query.limit, 10) || 12;
     const offset = (page - 1) * limit;
 
+    const filters = { provider_id, category_id, type, status };
+    const pagination = { limit, offset };
+
+    const { results, total } = await listingModel.findAll(filters, pagination);
+
+    res.status(200).json({
+      results,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const listing = await listingModel.findById(id);
+    if (!listing) {
+      return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
+    }
+
