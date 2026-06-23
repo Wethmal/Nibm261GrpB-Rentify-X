@@ -27,3 +27,52 @@ const findById = async (id) => {
   return result.rows[0] || null;
 };
 
+const search = async (filters, pagination) => {
+  return findAll(filters, pagination);
+};
+
+const create = async (listingData) => {
+  const {
+    provider_id,
+    category_id,
+    title,
+    description,
+    type = 'service',
+    status = 'pending_approval',
+    price_per_unit,
+    unit_label,
+    deposit_amount = 0.00,
+    photos = [],
+    district,
+    geo_lat = null,
+    geo_lng = null,
+    condition = null,
+    quantity_available = 1,
+    tags = [],
+    specifications = []
+  } = listingData;
+
+  const sql = `
+    INSERT INTO listings (
+      provider_id,
+      category_id,
+      title,
+      description,
+      type,
+      status,
+      price_per_unit,
+      unit_label,
+      deposit_amount,
+      photos,
+      district,
+      geo_lat,
+      geo_lng,
+      condition,
+      quantity_available,
+      tags,
+      specifications
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+    RETURNING *
+  `;
+

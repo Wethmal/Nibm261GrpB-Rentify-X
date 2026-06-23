@@ -9,3 +9,5 @@
  */
 const express = require('express');
 const router = express.Router();
+const listingController = require('../controllers/listing.controller');
+const authenticate = require('../middleware/auth.middleware');

@@ -120,3 +120,8 @@ const cloudUploadNic = multer({ storage: nicCloudinaryStorage, limits: { fileSiz
 const cloudUploadSingleAvatar = multer({ storage: avatarCloudinaryStorage, limits: { fileSize: 2 * 1024 * 1024 }, fileFilter: imageFileFilter }).single('file');
 const cloudUploadMultipleListings = multer({ storage: listingCloudinaryStorage, limits: { fileSize: 8 * 1024 * 1024 }, fileFilter: imageFileFilter }).array('photos', 10);
 
+// Disk multers
+const diskUploadNic = multer({ storage: createDiskStorage('nic'), limits: { fileSize: maxSizeMB * 1024 * 1024 }, fileFilter: nicFileFilter }).single('file');
+const diskUploadSingleAvatar = multer({ storage: createDiskStorage('avatars'), limits: { fileSize: 2 * 1024 * 1024 }, fileFilter: imageFileFilter }).single('file');
+const diskUploadMultipleListings = multer({ storage: createDiskStorage('listings'), limits: { fileSize: 8 * 1024 * 1024 }, fileFilter: imageFileFilter }).array('photos', 10);
+

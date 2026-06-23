@@ -37,3 +37,17 @@ const DISTRICT_COORDINATES = {
   Ratnapura: { lat: 6.6828, lng: 80.3992 },
   Kegalle: { lat: 7.2513, lng: 80.3464 }
 };
+const userModel = require('../models/user.model');
+const notificationModel = require('../models/notification.model');
+
+const getAll = async (req, res, next) => {
+  try {
+    const provider_id = req.query.provider_id || '';
+    const category_id = req.query.category_id || req.query.category || '';
+    const type = req.query.type || '';
+    const status = req.query.status || 'active';
+
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 12;
+    const offset = (page - 1) * limit;
+
