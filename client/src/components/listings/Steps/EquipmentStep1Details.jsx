@@ -48,3 +48,64 @@ export default function EquipmentStep1Details() {
         {errors.category && <span className="error-msg">{errors.category.message}</span>}
       </div>
 
+      <div className="form-group">
+        <label>Description *</label>
+        <textarea 
+          placeholder="Describe your equipment in detail (condition features, accessories included, etc.)..."
+          {...register('description')}
+        />
+        {errors.description && <span className="error-msg">{errors.description.message}</span>}
+      </div>
+
+      <div className="form-group">
+        <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Specifications (Optional)</span>
+          <button 
+            type="button" 
+            className="btn btn-secondary btn-sm" 
+            onClick={() => append({ key: '', value: '' })}
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', borderRadius: '6px' }}
+          >
+            + Add Spec
+          </button>
+        </label>
+        
+        {fields.map((field, index) => (
+          <div key={field.id} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+            <input 
+              type="text" 
+              placeholder="e.g. Brand" 
+              {...register(`specifications.${index}.key`)}
+              style={{ flex: 1 }}
+            />
+            <input 
+              type="text" 
+              placeholder="e.g. Sony" 
+              {...register(`specifications.${index}.value`)}
+              style={{ flex: 1 }}
+            />
+            <button 
+              type="button" 
+              onClick={() => remove(index)}
+              style={{
+                background: '#fee2e2',
+                color: '#ef4444',
+                border: 'none',
+                borderRadius: '6px',
+                width: '38px',
+                height: '38px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              🗑️
+            </button>
+          </div>
+        ))}
+        {errors.specifications && <span className="error-msg">{errors.specifications.message}</span>}
+      </div>
+    </div>
+  );
+}

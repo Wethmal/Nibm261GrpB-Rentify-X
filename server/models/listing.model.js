@@ -168,3 +168,22 @@ const getAvailability = async (listingId, startDate, endDate) => {
   return rows;
 };
 
+const upsertAvailability = async (listingId, availabilityData) => {
+  const { date, is_available, isAvailable, blocked_reason, blockedReason } = availabilityData;
+  const { rows } = await query(
+    `INSERT INTO listing_availability (listing_id, date, is_available, blocked_reason)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (listing_id, date)
+     DO UPDATE SET is_available = EXCLUDED.is_available,
+                   blocked_reason = EXCLUDED.blocked_reason,
+                   updated_at = NOW()
+     RETURNING *`,
+    [listingId, date, is_available ?? isAvailable, blocked_reason ?? blockedReason ?? null]
+  );
+  return rows[0];
+};
+
+const findAll = async (filters = {}, pagination = {}) => {
+  const { provider_id, category_id, type, status = 'active', q, district, min_price, max_price } = filters;
+  const { limit = 20, offset = 0 } = pagination;
+

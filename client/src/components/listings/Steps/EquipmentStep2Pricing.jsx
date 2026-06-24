@@ -18,3 +18,26 @@ export default function EquipmentStep2Pricing() {
         {errors.price_per_unit && <span className="error-msg">{errors.price_per_unit.message}</span>}
       </div>
 
+      <div className="form-group">
+        <label>Quantity Available *</label>
+        <input 
+          type="number" 
+          placeholder="e.g. 1"
+          {...register('quantity', { valueAsNumber: true })}
+        />
+        {errors.quantity && <span className="error-msg">{errors.quantity.message}</span>}
+      </div>
+
+      <div className="form-group">
+        <label>Condition *</label>
+        <select {...register('condition')}>
+          <option value="">Select equipment condition</option>
+          <option value="new">New (Unused, original packaging)</option>
+          <option value="good">Good (Slight wear, fully functional)</option>
+          <option value="fair">Fair (Visible wear, fully functional)</option>
+        </select>
+        {errors.condition && <span className="error-msg">{errors.condition.message}</span>}
+      </div>
+    </div>
+  );
+}

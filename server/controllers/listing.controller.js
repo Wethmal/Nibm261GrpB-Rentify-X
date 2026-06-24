@@ -157,3 +157,51 @@ const create = async (req, res, next) => {
       processedTags = tags;
     }
 
+    const listing = await listingModel.create({
+      provider_id,
+      category_id,
+      title,
+      description,
+      type,
+      status: 'pending_approval',
+      price_per_unit: Number(price_per_unit),
+      unit_label,
+      district,
+      geo_lat: finalLat,
+      geo_lng: finalLng,
+      condition,
+      quantity_available: quantity !== undefined ? Number(quantity) : 1,
+      tags: processedTags,
+      specifications: specifications || []
+    });
+
+    // Link availability calendar on creation (default next 30 days as available)
+    try {
+      const { query } = require('../config/db');
+      const today = new Date();
+      for (let i = 0; i < 30; i++) {
+        const nextDate = new Date();
+        nextDate.setDate(today.getDate() + i);
+        const dateStr = nextDate.toISOString().split('T')[0];
+        await query(
+          'INSERT INTO listing_availability (listing_id, date, is_available) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+          [listing.id, dateStr, true]
+        );
+      }
+    } catch (calendarErr) {
+      console.error('Error linking availability calendar:', calendarErr);
+    }
+
+    // Returns 201 with listingId
+    res.status(201).json({
+      message: 'Listing created successfully',
+      listingId: listing.id,
+      listing
+    });
+
+    // Fires asynchronously after 201 response
+    setImmediate(async () => {
+      try {
+        // 1. Log to admin moderation queue
+        console.log(`[Admin Moderation Queue] Listing pending approval: ${listing.id}`);
+
