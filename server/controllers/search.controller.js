@@ -10,3 +10,19 @@ const search = async (req, res, next) => {
   try {
     await query('SET pg_trgm.similarity_threshold = 0.1');
 
+    const q = req.query.q || '';
+    const categoryId = req.query.category_id || req.query.category || '';
+    const district = req.query.district || '';
+    const minPrice = req.query.min_price || req.query.priceMin || '';
+    const maxPrice = req.query.max_price || req.query.priceMax || '';
+    const minRating = req.query.min_rating || req.query.rating || '';
+    const type = req.query.type || '';
+    const sortBy = req.query.sort_by || req.query.sort || 'relevance';
+
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 12;
+    const offset = (page - 1) * limit;
+
+    const whereParts = ["l.status = 'active'", "NOT EXISTS (SELECT 1 FROM users ru WHERE ru.id = l.provider_id AND ru.status IN ('banned', 'suspended'))"];
+    const values = [];
+

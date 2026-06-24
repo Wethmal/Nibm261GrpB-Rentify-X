@@ -9,3 +9,6 @@
  */
 const express = require('express');
 const router = express.Router();
+const searchController = require('../controllers/search.controller');
+
+// GET /api/v1/search — Search listings with filters (q, category, district, type, priceMin, priceMax, rating, sort, page, limit)
