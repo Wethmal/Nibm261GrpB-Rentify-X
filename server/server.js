@@ -31,3 +31,7 @@ const helmet = require('helmet');
 require('dotenv').config();
 const { query } = require('./config/db');
 
+// Ensure database booking_status_enum contains 'rejected'
+query("ALTER TYPE booking_status_enum ADD VALUE IF NOT EXISTS 'rejected'").catch(() => {});
+
+// Warn (do not crash) when the gap-features migration has not been applied to this database
