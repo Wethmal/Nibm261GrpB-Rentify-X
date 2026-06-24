@@ -146,3 +146,25 @@ const softDelete = async (id) => {
   return result.rows[0] || null;
 };
 
+const getAvailability = async (listingId, startDate, endDate) => {
+  const values = [listingId];
+  const where = ['listing_id = $1'];
+
+  if (startDate) {
+    values.push(startDate);
+    where.push(`date >= $${values.length}`);
+  }
+  if (endDate) {
+    values.push(endDate);
+    where.push(`date <= $${values.length}`);
+  }
+
+  const { rows } = await query(
+    `SELECT * FROM listing_availability
+     WHERE ${where.join(' AND ')}
+     ORDER BY date ASC`,
+    values
+  );
+  return rows;
+};
+

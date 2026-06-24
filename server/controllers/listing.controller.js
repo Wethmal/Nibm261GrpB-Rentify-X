@@ -127,3 +127,33 @@ const create = async (req, res, next) => {
     // provider_id set from JWT (req.user.userId)
     const provider_id = req.user.userId;
 
+    // Validate category exists
+    const category = await categoryModel.findById(category_id);
+    if (!category) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Invalid category_id' });
+    }
+
+    // Validate category.type matches the listing type
+    if (category.type !== type) {
+      return res.status(400).json({ error: 'Bad Request', message: `Category type mismatch. Expected ${type}.` });
+    }
+
+    // Equipment specific validations
+    if (type === 'equipment') {
+      if (quantity === undefined || quantity === null || isNaN(quantity) || quantity < 1) {
+        return res.status(400).json({ error: 'Bad Request', message: 'Quantity must be greater than or equal to 1' });
+      }
+      const allowedConditions = ['new', 'good', 'fair'];
+      if (!condition || !allowedConditions.includes(condition.toLowerCase())) {
+        return res.status(400).json({ error: 'Bad Request', message: 'Condition must be new, good, or fair' });
+      }
+    }
+
+    // Process tags
+    let processedTags = [];
+    if (typeof tags === 'string') {
+      processedTags = tags.split(',').map(t => t.trim()).filter(Boolean);
+    } else if (Array.isArray(tags)) {
+      processedTags = tags;
+    }
+
