@@ -76,3 +76,41 @@ const getById = async (req, res, next) => {
       return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
     }
 
+    const reviewModel = require('../models/review.model');
+    const reviews = await reviewModel.findByListing(id);
+    listing.reviews = reviews || [];
+
+    res.status(200).json(listing);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const create = async (req, res, next) => {
+  try {
+    const {
+      title,
+      description,
+      category_id,
+      type = 'service',
+      price_per_unit,
+      unit_label,
+      district,
+      tags,
+      quantity,
+      condition,
+      specifications,
+      geo_lat,
+      geo_lng
+    } = req.body;
+
+    let finalLat = geo_lat;
+    let finalLng = geo_lng;
+    if (district && (!finalLat || !finalLng)) {
+      const coords = DISTRICT_COORDINATES[district];
+      if (coords) {
+        finalLat = finalLat || coords.lat;
+        finalLng = finalLng || coords.lng;
+      }
+    }
+

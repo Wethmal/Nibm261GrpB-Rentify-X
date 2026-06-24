@@ -110,3 +110,17 @@ const update = async (id, updateData) => {
   const values = [];
   let index = 1;
 
+  for (const [key, value] of Object.entries(updateData)) {
+    if (allowedFields.includes(key)) {
+      fields.push(`${key} = $${index}`);
+      if (key === 'photos' || key === 'tags' || key === 'specifications') {
+        values.push(JSON.stringify(value));
+      } else {
+        values.push(value);
+      }
+      index++;
+    }
+  }
+
+  if (fields.length === 0) return null;
+

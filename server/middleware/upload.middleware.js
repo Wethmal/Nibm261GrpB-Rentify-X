@@ -144,3 +144,8 @@ const wrapUpload = (cloudMulter, diskMulter, fieldName) => {
 };
 
 const uploadNic = wrapUpload(cloudUploadNic, diskUploadNic, 'nic');
+const uploadSingleAvatar = wrapUpload(cloudUploadSingleAvatar, diskUploadSingleAvatar, 'avatar');
+const uploadMultipleListings = wrapUpload(cloudUploadMultipleListings, diskUploadMultipleListings, 'listings');
+
+module.exports = { uploadSingleAvatar, uploadSingle: uploadSingleAvatar, uploadMultipleListings, uploadNic };
+

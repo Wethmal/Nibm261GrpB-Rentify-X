@@ -38,3 +38,4 @@ const getOptimizedUrl = (publicId, options = {}) => {
   return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/${publicId}`;
 };
 
+module.exports = { uploadImage, deleteImage, getOptimizedUrl };

@@ -19,3 +19,6 @@ const upload = multer({
   limits: { fileSize: 15 * 1024 * 1024 }
 });
 
+// GET /api/v1/listings — List all active listings (with optional filters)
+router.get('/', listingController.getAll);
+
