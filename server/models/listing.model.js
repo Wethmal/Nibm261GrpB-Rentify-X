@@ -124,3 +124,66 @@ const update = async (id, updateData) => {
 
   if (fields.length === 0) return null;
 
+  values.push(id);
+  const queryText = `UPDATE listings SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${index} RETURNING *`;
+  const { rows } = await query(queryText, values);
+  return rows[0] || null;
+};
+
+const updateStatus = async (id, status) => {
+  const result = await query(
+    'UPDATE listings SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+    [status, id]
+  );
+  return result.rows[0] || null;
+};
+
+const softDelete = async (id) => {
+  const result = await query(
+    "UPDATE listings SET status = 'deleted', updated_at = NOW() WHERE id = $1 RETURNING *",
+    [id]
+  );
+  return result.rows[0] || null;
+};
+
+const getAvailability = async (listingId, startDate, endDate) => {
+  const values = [listingId];
+  const where = ['listing_id = $1'];
+
+  if (startDate) {
+    values.push(startDate);
+    where.push(`date >= $${values.length}`);
+  }
+  if (endDate) {
+    values.push(endDate);
+    where.push(`date <= $${values.length}`);
+  }
+
+  const { rows } = await query(
+    `SELECT * FROM listing_availability
+     WHERE ${where.join(' AND ')}
+     ORDER BY date ASC`,
+    values
+  );
+  return rows;
+};
+
+const upsertAvailability = async (listingId, availabilityData) => {
+  const { date, is_available, isAvailable, blocked_reason, blockedReason } = availabilityData;
+  const { rows } = await query(
+    `INSERT INTO listing_availability (listing_id, date, is_available, blocked_reason)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (listing_id, date)
+     DO UPDATE SET is_available = EXCLUDED.is_available,
+                   blocked_reason = EXCLUDED.blocked_reason,
+                   updated_at = NOW()
+     RETURNING *`,
+    [listingId, date, is_available ?? isAvailable, blocked_reason ?? blockedReason ?? null]
+  );
+  return rows[0];
+};
+
+const findAll = async (filters = {}, pagination = {}) => {
+  const { provider_id, category_id, type, status = 'active', q, district, min_price, max_price } = filters;
+  const { limit = 20, offset = 0 } = pagination;
+

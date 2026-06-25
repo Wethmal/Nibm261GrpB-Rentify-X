@@ -31,3 +31,5 @@ import Navbar from './components/layout/Navbar.jsx';
 import Footer from './components/layout/Footer.jsx';
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 
+// --- Auth Pages ---
+import RegisterPage from './pages/auth/RegisterPage.jsx';

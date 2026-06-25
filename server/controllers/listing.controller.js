@@ -114,3 +114,94 @@ const create = async (req, res, next) => {
       }
     }
 
+    // Returns 400 on missing required fields
+    if (!title || !description || !category_id || !price_per_unit || !unit_label || !district) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Missing required fields' });
+    }
+
+    // Returns 403 if user role is not provider
+    if (req.user.role !== 'provider') {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only providers can create listings' });
+    }
+
+    // provider_id set from JWT (req.user.userId)
+    const provider_id = req.user.userId;
+
+    // Validate category exists
+    const category = await categoryModel.findById(category_id);
+    if (!category) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Invalid category_id' });
+    }
+
+    // Validate category.type matches the listing type
+    if (category.type !== type) {
+      return res.status(400).json({ error: 'Bad Request', message: `Category type mismatch. Expected ${type}.` });
+    }
+
+    // Equipment specific validations
+    if (type === 'equipment') {
+      if (quantity === undefined || quantity === null || isNaN(quantity) || quantity < 1) {
+        return res.status(400).json({ error: 'Bad Request', message: 'Quantity must be greater than or equal to 1' });
+      }
+      const allowedConditions = ['new', 'good', 'fair'];
+      if (!condition || !allowedConditions.includes(condition.toLowerCase())) {
+        return res.status(400).json({ error: 'Bad Request', message: 'Condition must be new, good, or fair' });
+      }
+    }
+
+    // Process tags
+    let processedTags = [];
+    if (typeof tags === 'string') {
+      processedTags = tags.split(',').map(t => t.trim()).filter(Boolean);
+    } else if (Array.isArray(tags)) {
+      processedTags = tags;
+    }
+
+    const listing = await listingModel.create({
+      provider_id,
+      category_id,
+      title,
+      description,
+      type,
+      status: 'pending_approval',
+      price_per_unit: Number(price_per_unit),
+      unit_label,
+      district,
+      geo_lat: finalLat,
+      geo_lng: finalLng,
+      condition,
+      quantity_available: quantity !== undefined ? Number(quantity) : 1,
+      tags: processedTags,
+      specifications: specifications || []
+    });
+
+    // Link availability calendar on creation (default next 30 days as available)
+    try {
+      const { query } = require('../config/db');
+      const today = new Date();
+      for (let i = 0; i < 30; i++) {
+        const nextDate = new Date();
+        nextDate.setDate(today.getDate() + i);
+        const dateStr = nextDate.toISOString().split('T')[0];
+        await query(
+          'INSERT INTO listing_availability (listing_id, date, is_available) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+          [listing.id, dateStr, true]
+        );
+      }
+    } catch (calendarErr) {
+      console.error('Error linking availability calendar:', calendarErr);
+    }
+
+    // Returns 201 with listingId
+    res.status(201).json({
+      message: 'Listing created successfully',
+      listingId: listing.id,
+      listing
+    });
+
+    // Fires asynchronously after 201 response
+    setImmediate(async () => {
+      try {
+        // 1. Log to admin moderation queue
+        console.log(`[Admin Moderation Queue] Listing pending approval: ${listing.id}`);
+
