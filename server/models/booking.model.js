@@ -9,3 +9,29 @@
  */
 const { query, getClient } = require('../config/db');
 
+const findById = async (id) => {
+  const sql = `
+    SELECT b.*,
+           c.full_name AS consumer_name,
+           c.email AS consumer_email,
+           c.mobile AS consumer_mobile,
+           p.full_name AS provider_name,
+           p.email AS provider_email,
+           p.mobile AS provider_mobile,
+           sl.title AS service_listing_title,
+           sl.photos AS service_listing_photos,
+           sl.district AS service_listing_district,
+           el.title AS equipment_listing_title,
+           el.photos AS equipment_listing_photos,
+           el.district AS equipment_listing_district
+    FROM bookings b
+    LEFT JOIN users c ON b.consumer_id = c.id
+    LEFT JOIN users p ON b.provider_id = p.id
+    LEFT JOIN listings sl ON b.service_listing_id = sl.id
+    LEFT JOIN listings el ON b.equipment_listing_id = el.id
+    WHERE b.id = $1
+  `;
+  const result = await query(sql, [id]);
+  return result.rows[0] || null;
+};
+
