@@ -27,3 +27,14 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // --- Layout Components ---
+import Navbar from './components/layout/Navbar.jsx';
+import Footer from './components/layout/Footer.jsx';
+import ProtectedRoute from './components/common/ProtectedRoute.jsx';
+
+// --- Auth Pages ---
+import RegisterPage from './pages/auth/RegisterPage.jsx';
+import LoginPage from './pages/auth/LoginPage.jsx';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
+
+// --- Consumer Pages ---
+import HomePage from './pages/consumer/HomePage.jsx';
