@@ -35,3 +35,9 @@ const findById = async (id) => {
   return result.rows[0] || null;
 };
 
+const findByConsumer = async (consumerId, options = {}) => {
+  const { limit = 20, offset = 0 } = options;
+  const countSql = `SELECT COUNT(*) FROM bookings WHERE consumer_id = $1`;
+  const countRes = await query(countSql, [consumerId]);
+  const totalCount = parseInt(countRes.rows[0].count, 10);
+
