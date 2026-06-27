@@ -29,3 +29,13 @@ const create = async (req, res, next) => {
       ...(equipment_listing_id ? [equipment_listing_id] : []),
     ].filter(Boolean))];
 
+    if (!listing_id || !scheduled_date || !scheduled_time || !duration) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Missing required booking fields' });
+    }
+
+    // 2. Check listing exists and is active
+    const listing = await listingModel.findById(listing_id);
+    if (!listing || listing.status !== 'active') {
+      return res.status(404).json({ error: 'Not Found', message: 'Listing not found or inactive' });
+    }
+

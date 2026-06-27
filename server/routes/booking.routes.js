@@ -13,3 +13,6 @@ const bookingController = require('../controllers/booking.controller');
 const authenticate = require('../middleware/auth.middleware');
 const cancellation = require('../controllers/cancellation.controller');
 
+// POST /api/v1/bookings — Create a booking request (consumer)
+router.post('/', authenticate, bookingController.create);
+

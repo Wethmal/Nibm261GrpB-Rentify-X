@@ -41,3 +41,24 @@ const findByConsumer = async (consumerId, options = {}) => {
   const countRes = await query(countSql, [consumerId]);
   const totalCount = parseInt(countRes.rows[0].count, 10);
 
+  const sql = `
+    SELECT b.*,
+           COALESCE(sl.id, el.id) AS primary_listing_id,
+           COALESCE(sl.title, el.title, '') AS listing_title,
+           COALESCE(sl.photos, el.photos, '[]'::jsonb) AS listing_photos,
+           COALESCE(sl.district, el.district, '') AS listing_district,
+           sl.title AS service_listing_title,
+           el.title AS equipment_listing_title,
+           p.full_name AS provider_name
+    FROM bookings b
+    LEFT JOIN listings sl ON b.service_listing_id = sl.id
+    LEFT JOIN listings el ON b.equipment_listing_id = el.id
+    LEFT JOIN users p ON b.provider_id = p.id
+    WHERE b.consumer_id = $1
+    ORDER BY b.created_at DESC
+    LIMIT $2 OFFSET $3
+  `;
+  const result = await query(sql, [consumerId, limit, offset]);
+  return { bookings: result.rows, totalCount };
+};
+
