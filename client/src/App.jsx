@@ -33,3 +33,6 @@ import ProtectedRoute from './components/common/ProtectedRoute.jsx';
 
 // --- Auth Pages ---
 import RegisterPage from './pages/auth/RegisterPage.jsx';
+import LoginPage from './pages/auth/LoginPage.jsx';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
+
