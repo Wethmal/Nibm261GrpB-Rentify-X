@@ -42,3 +42,6 @@ query("SELECT to_regclass('public.provider_payouts') AS t")
 const path = require('path');
 
 // --- Import Route Modules ---
+const authRoutes = require('./routes/auth.routes');
+const userRoutes = require('./routes/user.routes');
+const listingRoutes = require('./routes/listing.routes');

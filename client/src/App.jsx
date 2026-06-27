@@ -36,3 +36,5 @@ import RegisterPage from './pages/auth/RegisterPage.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 
+// --- Consumer Pages ---
+import HomePage from './pages/consumer/HomePage.jsx';
