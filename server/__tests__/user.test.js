@@ -106,3 +106,117 @@ describe('User Profile Integration Tests', () => {
           mobile: '123' // invalid SL format
         });
 
+      expect(res.statusCode).toEqual(400);
+      expect(res.body).toHaveProperty('details');
+    });
+
+    it('should not allow role or status change via this endpoint', async () => {
+      const res = await request(app)
+        .put(`/api/v1/users/${user1Id}`)
+        .set('Authorization', `Bearer ${user1Token}`)
+        .send({
+          bio: 'Testing role block',
+          role: 'admin',
+          status: 'suspended'
+        });
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.role).not.toEqual('admin');
+      expect(res.body.status).not.toEqual('suspended');
+    });
+  });
+
+  describe('POST /api/v1/users/:id/avatar', () => {
+    const path = require('path');
+    const fs = require('fs').promises;
+
+    it('should reject non-image files (400)', async () => {
+      // Create a dummy text file
+      const dummyFilePath = path.join(__dirname, 'dummy.txt');
+      await fs.writeFile(dummyFilePath, 'this is not an image');
+
+      const res = await request(app)
+        .post(`/api/v1/users/${user1Id}/avatar`)
+        .set('Authorization', `Bearer ${user1Token}`)
+        .attach('file', dummyFilePath);
+
+      await fs.unlink(dummyFilePath);
+      expect(res.statusCode).toEqual(415);
+    });
+
+    it('should reject files larger than 2MB', async () => {
+      // Create a 3MB dummy image
+      const largeFilePath = path.join(__dirname, 'large.jpg');
+      const largeBuffer = Buffer.alloc(3 * 1024 * 1024, 'a'); // 3MB
+      await fs.writeFile(largeFilePath, largeBuffer);
+
+      const res = await request(app)
+        .post(`/api/v1/users/${user1Id}/avatar`)
+        .set('Authorization', `Bearer ${user1Token}`)
+        .attach('file', largeFilePath, { contentType: 'image/jpeg' });
+
+      await fs.unlink(largeFilePath);
+      expect(res.statusCode).toBeGreaterThanOrEqual(400);
+    });
+  });
+
+  describe('GET /api/v1/users/:id (Profile Visibility)', () => {
+    it('should hide private fields from other users', async () => {
+      // First, let user1 set mobile and address to private
+      await request(app)
+        .put(`/api/v1/users/${user1Id}`)
+        .set('Authorization', `Bearer ${user1Token}`)
+        .send({
+          mobile: '0771112223',
+          address: 'Secret Hideout',
+          visibility_settings: { mobile: false, address: false }
+        });
+
+      // User2 requests User1's profile
+      const res = await request(app)
+        .get(`/api/v1/users/${user1Id}`)
+        .set('Authorization', `Bearer ${user2Token}`);
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.mobile).toBeUndefined();
+      expect(res.body.address).toBeUndefined();
+    });
+
+    it('should show private fields to the owner', async () => {
+      const res = await request(app)
+        .get(`/api/v1/users/${user1Id}`)
+        .set('Authorization', `Bearer ${user1Token}`);
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.mobile).toEqual('0771112223');
+      expect(res.body.address).toEqual('Secret Hideout');
+    });
+
+    it('should show private fields to admin', async () => {
+      const res = await request(app)
+        .get(`/api/v1/users/${user1Id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.mobile).toEqual('0771112223');
+      expect(res.body.address).toEqual('Secret Hideout');
+    });
+
+    it('should show public fields to unauthenticated users', async () => {
+      // User1 sets mobile to public
+      await request(app)
+        .put(`/api/v1/users/${user1Id}`)
+        .set('Authorization', `Bearer ${user1Token}`)
+        .send({
+          visibility_settings: { mobile: true, address: false }
+        });
+
+      const res = await request(app)
+        .get(`/api/v1/users/${user1Id}`); // No auth header
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.mobile).toEqual('0771112223');
+      expect(res.body.address).toBeUndefined();
+    });
+  });
+});
