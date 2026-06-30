@@ -70,3 +70,7 @@ const findByProvider = async (providerId, options = {}) => {
     dateFilter = `AND b.scheduled_date >= CURRENT_DATE AND b.status IN ('pending', 'confirmed')`;
   }
 
+  const countSql = `SELECT COUNT(*) FROM bookings b WHERE b.provider_id = $1 ${dateFilter}`;
+  const countRes = await query(countSql, [providerId]);
+  const totalCount = parseInt(countRes.rows[0].count, 10);
+

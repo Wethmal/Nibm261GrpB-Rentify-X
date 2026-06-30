@@ -94,3 +94,30 @@ const create = async (req, res, next) => {
         const consumerRes = await query('SELECT full_name FROM users WHERE id = $1', [req.user.userId]);
         const consumerName = consumerRes.rows[0]?.full_name || 'A consumer';
 
+        await notificationModel.create({
+          user_id: listing.provider_id,
+          type: 'new_booking_request',
+          title: 'New Booking Request',
+          body: `You received a new booking request for "${listing.title}".`,
+          metadata: {
+            bookingId: booking.id,
+            consumerName,
+            scheduledDate: scheduled_date
+          }
+        });
+      } catch (notifErr) {
+        console.error('Asynchronous notification creation failed:', notifErr);
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getAll = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
+    }
+

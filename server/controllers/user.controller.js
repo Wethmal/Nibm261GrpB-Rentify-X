@@ -94,3 +94,23 @@ const getPublicProfile = async (req, res, next) => {
     if (visibility.mobile || canSeePrivate) publicData.mobile = user.mobile;
     if (visibility.address || canSeePrivate) publicData.address = user.address;
 
+    res.status(200).json(publicData);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const uploadAvatar = async (req, res, next) => {
+  try {
+    const targetUserId = req.params.id;
+    const requestUserId = req.user.userId;
+    const requestUserRole = req.user.role;
+
+    if (targetUserId !== requestUserId && requestUserRole !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You are not allowed to update this avatar' });
+    }
+
+    if (req.fileValidationError) {
+      return res.status(415).json({ error: { message: req.fileValidationError } });
+    }
+
