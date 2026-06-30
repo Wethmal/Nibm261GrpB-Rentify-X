@@ -90,3 +90,54 @@ function BookingHistoryPage() {
     });
   }, [bookings, activeTab]);
 
+  // Search filtering
+  const filteredBookings = useMemo(() => {
+    return tabFilteredBookings.filter((booking) => {
+      const title = booking.listing_title || booking.service_listing?.title || booking.equipment_listing?.title || booking.title || '';
+      const provider = booking.provider_name || booking.provider?.full_name || '';
+      const titleMatches = title.toLowerCase().includes(searchQuery.toLowerCase());
+      const providerMatches = provider.toLowerCase().includes(searchQuery.toLowerCase());
+      return titleMatches || providerMatches;
+    });
+  }, [tabFilteredBookings, searchQuery]);
+
+  // Real-time Spend Metric calculations
+  const stats = useMemo(() => {
+    const totalCount = filteredBookings.length;
+    const totalSpend = filteredBookings
+      .filter(b => b.status === 'confirmed' || b.status === 'completed')
+      .reduce((sum, b) => sum + (b.total_price || 0), 0);
+    return { totalCount, totalSpend };
+  }, [filteredBookings]);
+
+  // Pagination bounds
+  const paginatedBookings = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredBookings.slice(startIndex, startIndex + pageSize);
+  }, [filteredBookings, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(filteredBookings.length / pageSize) || 1;
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setCurrentPage(1); // Reset page on tab shift
+  };
+
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case 'pending': return 'badge--pending';
+      case 'confirmed': return 'badge--confirmed';
+      case 'completed': return 'badge--completed';
+      case 'cancelled': return 'badge--cancelled';
+      default: return 'badge--neutral';
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-LK', {
+      style: 'currency',
+      currency: 'LKR',
+      minimumFractionDigits: 0
+    }).format(amount);
+  };
+
