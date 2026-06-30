@@ -73,3 +73,24 @@ const getPublicProfile = async (req, res, next) => {
     // If visibility_settings is null, use defaults (false)
     const visibility = user.visibility_settings || { mobile: false, address: false };
 
+    // Only return public fields or fields explicitly set to public
+    const publicData = {
+      id: user.id,
+      full_name: user.full_name,
+      bio: user.bio,
+      profile_photo_url: user.profile_photo_url,
+      trust_score: user.trust_score,
+      role: user.role,
+      status: user.status,
+      created_at: user.created_at,
+      district: user.district,
+      country: user.country
+    };
+
+    const isOwner = req.user && req.user.userId === targetUserId;
+    const isAdmin = req.user && req.user.role === 'admin';
+    const canSeePrivate = isOwner || isAdmin;
+
+    if (visibility.mobile || canSeePrivate) publicData.mobile = user.mobile;
+    if (visibility.address || canSeePrivate) publicData.address = user.address;
+

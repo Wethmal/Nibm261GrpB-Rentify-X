@@ -65,3 +65,8 @@ const findByConsumer = async (consumerId, options = {}) => {
 const findByProvider = async (providerId, options = {}) => {
   const { limit = 20, offset = 0, upcoming = false } = options;
 
+  let dateFilter = '';
+  if (upcoming) {
+    dateFilter = `AND b.scheduled_date >= CURRENT_DATE AND b.status IN ('pending', 'confirmed')`;
+  }
+

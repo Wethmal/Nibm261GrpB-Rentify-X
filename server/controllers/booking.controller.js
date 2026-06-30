@@ -81,3 +81,16 @@ const create = async (req, res, next) => {
       throw err;
     }
 
+    // 4. Send HTTP response first (non-blocking)
+    res.status(201).json({
+      message: 'Booking request sent successfully',
+      bookingId: booking.id,
+      booking
+    });
+
+    // 5. Fire notification to provider asynchronously (non-blocking)
+    setImmediate(async () => {
+      try {
+        const consumerRes = await query('SELECT full_name FROM users WHERE id = $1', [req.user.userId]);
+        const consumerName = consumerRes.rows[0]?.full_name || 'A consumer';
+
