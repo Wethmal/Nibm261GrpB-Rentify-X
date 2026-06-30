@@ -134,3 +134,20 @@ const getAll = async (req, res, next) => {
       result = await bookingModel.findByProvider(req.user.userId, { limit: limitNum, offset, upcoming: isUpcoming });
     }
 
+    res.status(200).json({
+      bookings: result.bookings,
+      totalCount: result.totalCount,
+      page: pageNum,
+      limit: limitNum
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getById = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
+    }
+

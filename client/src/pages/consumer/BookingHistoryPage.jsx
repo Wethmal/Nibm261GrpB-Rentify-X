@@ -141,3 +141,141 @@ function BookingHistoryPage() {
     }).format(amount);
   };
 
+  const renderCardTimeline = (status) => {
+    return (
+      <div className="booking-card__micro-timeline" data-testid="micro-timeline">
+        <div className="timeline-node active">
+          <div className="timeline-node__dot" />
+          <span className="timeline-node__label">Requested</span>
+        </div>
+        <div className="timeline-connector active" />
+
+        {status === 'cancelled' ? (
+          <div className="timeline-node active error">
+            <div className="timeline-node__dot" />
+            <span className="timeline-node__label">Cancelled</span>
+          </div>
+        ) : (
+          <>
+            <div className={`timeline-node ${status !== 'pending' ? 'active' : ''}`}>
+              <div className="timeline-node__dot" />
+              <span className="timeline-node__label">
+                {status === 'pending' ? 'Awaiting Host' : 'Approved'}
+              </span>
+            </div>
+            <div className={`timeline-connector ${status === 'completed' || status === 'confirmed' ? 'active' : ''}`} />
+            <div className={`timeline-node ${status === 'completed' || status === 'confirmed' ? 'active' : ''}`}>
+              <div className="timeline-node__dot" />
+              <span className="timeline-node__label">
+                {status === 'completed' ? 'Completed' : 'Scheduled'}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="booking-history-page">
+      <div className="bookings-header">
+        <div className="bookings-header__title-section">
+          <h1>My Bookings</h1>
+          <p>View and manage your booking history.</p>
+        </div>
+
+        {/* Dynamic spend indicators */}
+        <div className="bookings-header__stats">
+          <div className="bookings-header__stat-card">
+            <DollarSign className="stat-card__icon" size={20} />
+            <div className="stat-card__info">
+              <span className="stat-card__label">Active / Completed Spend</span>
+              <span className="stat-card__val">{formatCurrency(stats.totalSpend)}</span>
+            </div>
+          </div>
+          <div className="bookings-header__stat-card">
+            <Sparkles className="stat-card__icon" size={20} />
+            <div className="stat-card__info">
+              <span className="stat-card__label">Filtered Entries</span>
+              <span className="stat-card__val">{stats.totalCount} Bookings</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {flash && <div className="fx-alert fx-alert--success" role="status" style={{ margin: '0 0 12px' }}>{flash}</div>}
+      {cancelTarget && (
+        <CancelBookingModal booking={cancelTarget} onClose={() => setCancelTarget(null)} onCancelled={onCancelled} />
+      )}
+      {reviewTarget && (
+        <div className="fx-overlay" onClick={() => setReviewTarget(null)}>
+          <div className="fx-modal" onClick={(e) => e.stopPropagation()}>
+            <ReviewForm
+              bookingId={reviewTarget.id}
+              onCancel={() => setReviewTarget(null)}
+              onSubmitSuccess={() => { setFlash('Thanks! Your review was published.'); setTimeout(() => setReviewTarget(null), 1200); }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Navigation Filter Tabs */}
+      <div className="bookings-tabs-container">
+        <div className="bookings-tabs" role="tablist">
+          {['all', 'active', 'pending', 'past', 'cancelled'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => handleTabChange(tab)}
+              className={`bookings-tab ${activeTab === tab ? 'active' : ''}`}
+              role="tab"
+              aria-selected={activeTab === tab}
+              data-testid={`tab-${tab}`}
+            >
+              {tab.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        {/* Keyword Search Field */}
+        <div className="bookings-search">
+          <Search size={18} className="bookings-search__icon" />
+          <input
+            type="text"
+            placeholder="Search by title or provider..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="bookings-search__input"
+            aria-label="Search bookings"
+          />
+        </div>
+      </div>
+
+      {loading ? (
+        /* Premium Loading Skeleton */
+        <div className="bookings-list" data-testid="bookings-loading">
+          {[1, 2].map((n) => (
+            <div key={n} className="booking-card booking-card--skeleton">
+              <div className="booking-card__image-container skeleton-box" style={{ height: '200px' }} />
+              <div className="booking-card__content" style={{ gap: '1rem' }}>
+                <div className="skeleton-box" style={{ width: '60%', height: '24px' }} />
+                <div className="skeleton-box" style={{ width: '40%', height: '16px' }} />
+                <div className="skeleton-box" style={{ width: '80%', height: '16px' }} />
+                <div className="skeleton-box" style={{ width: '30%', height: '36px', marginTop: 'auto' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : paginatedBookings.length > 0 ? (
+        <div className="bookings-list" data-testid="bookings-list">
+          {paginatedBookings.map((booking) => {
+            // Safe key mappings for flexible database records
+            const title = booking.listing_title || booking.service_listing?.title || booking.equipment_listing?.title || booking.title || 'Rental Listing';
+            const photo = booking.listing_photo || booking.service_listing?.photos?.[0] || booking.equipment_listing?.photos?.[0] || booking.photo || 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=400';
+            const district = booking.listing_district || booking.service_listing?.district || booking.equipment_listing?.district || booking.district || 'Colombo';
+            const providerName = booking.provider_name || booking.provider?.full_name || 'Rentify Partner';
+            const targetListingId = booking.service_listing_id || booking.equipment_listing_id || booking.listing_id;
+            const durationText = booking.duration || `${booking.duration_hours} hours`;
+

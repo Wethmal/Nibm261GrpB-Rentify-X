@@ -95,3 +95,18 @@ const findByProvider = async (providerId, options = {}) => {
   return { bookings: result.rows, totalCount };
 };
 
+const create = async (bookingData) => {
+  const {
+    consumer_id,
+    provider_id,
+    service_listing_id,
+    equipment_listing_id,
+    equipment_items = [],
+    booking_type,
+    scheduled_date,
+    scheduled_time,
+    duration_hours,
+    total_price,
+    notes
+  } = bookingData;
+

@@ -125,3 +125,25 @@ const uploadAvatar = async (req, res, next) => {
 
     const filePath = path.join(uploadsDir, fileName);
 
+    await sharp(req.file.buffer)
+      .resize(400, 400, {
+        fit: sharp.fit.cover,
+        position: sharp.strategy.entropy
+      })
+      .webp({ quality: 80 })
+      .toFile(filePath);
+
+    const secureUrl = `/uploads/avatars/${fileName}`;
+
+    // Clean up old avatar
+    const user = await userModel.findById(targetUserId);
+    if (user && user.profile_photo_url && user.profile_photo_url.startsWith('/uploads/avatars/')) {
+      const oldFileName = path.basename(user.profile_photo_url);
+      const oldFilePath = path.join(uploadsDir, oldFileName);
+      try {
+        await fs.unlink(oldFilePath);
+      } catch (err) {
+        console.warn('Failed to delete old avatar:', oldFilePath);
+      }
+    }
+
