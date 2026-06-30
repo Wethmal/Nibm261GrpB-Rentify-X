@@ -114,3 +114,14 @@ const uploadAvatar = async (req, res, next) => {
       return res.status(415).json({ error: { message: req.fileValidationError } });
     }
 
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const fileName = `avatar_${targetUserId}_${Date.now()}.webp`;
+    const uploadsDir = path.join(__dirname, '..', 'public', 'uploads', 'avatars');
+
+    await fs.mkdir(uploadsDir, { recursive: true });
+
+    const filePath = path.join(uploadsDir, fileName);
+

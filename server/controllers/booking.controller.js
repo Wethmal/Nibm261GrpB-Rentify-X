@@ -121,3 +121,16 @@ const getAll = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
     }
 
+    const { page = 1, limit = 20, upcoming } = req.query;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const offset = (pageNum - 1) * limitNum;
+    const isUpcoming = upcoming === 'true';
+
+    let result = { bookings: [], totalCount: 0 };
+    if (req.user.role === 'consumer') {
+      result = await bookingModel.findByConsumer(req.user.userId, { limit: limitNum, offset });
+    } else if (req.user.role === 'provider') {
+      result = await bookingModel.findByProvider(req.user.userId, { limit: limitNum, offset, upcoming: isUpcoming });
+    }
+
