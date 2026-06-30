@@ -26,3 +26,67 @@ import axiosInstance from '../../api/axiosInstance';
 import CancelBookingModal from '../../components/bookings/CancelBookingModal';
 import ReviewForm from '../../components/reviews/ReviewForm';
 import ReportButton from '../../components/reports/ReportButton';
+import '../../components/common/features.css';
+import './BookingHistoryPage.css';
+
+
+
+function BookingHistoryPage() {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(5);
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [flash, setFlash] = useState('');
+
+  // Fetch bookings on mount
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosInstance.get('/bookings');
+        const data = response.data;
+        if (data && Array.isArray(data)) {
+          setBookings(data);
+        } else if (data && Array.isArray(data.bookings)) {
+          setBookings(data.bookings);
+        } else {
+          setBookings([]);
+        }
+      } catch (err) {
+        console.error('Backend API connection failed:', err);
+        setBookings([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, []);
+
+  // Opens the refund-preview modal (US26); the modal performs the cancellation
+  const handleCancel = (booking) => setCancelTarget(booking);
+
+  const onCancelled = (result) => {
+    setBookings((prev) => prev.map((b) => (b.id === result.booking.id ? { ...b, status: 'cancelled' } : b)));
+    setCancelTarget(null);
+    setFlash(result.refundAmount > 0
+      ? `Booking cancelled. A refund of LKR ${Number(result.refundAmount).toLocaleString()} (${result.refundPercent}%) is on its way.`
+      : 'Booking cancelled. No refund applies under the cancellation policy.');
+  };
+
+  // Status mapping to tab groupings
+  const tabFilteredBookings = useMemo(() => {
+    return bookings.filter((booking) => {
+      if (activeTab === 'all') return true;
+      if (activeTab === 'active') return booking.status === 'confirmed';
+      if (activeTab === 'pending') return booking.status === 'pending';
+      if (activeTab === 'past') return booking.status === 'completed';
+      if (activeTab === 'cancelled') return booking.status === 'cancelled';
+      return true;
+    });
+  }, [bookings, activeTab]);
+
