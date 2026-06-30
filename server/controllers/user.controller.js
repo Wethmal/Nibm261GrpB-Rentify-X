@@ -45,3 +45,31 @@ const updateProfile = async (req, res, next) => {
     // Remove undefined values
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
+    const updatedUser = await userModel.update(targetUserId, updateData);
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found or no changes made' });
+    }
+
+    const { password_hash, ...safeUser } = updatedUser;
+    res.status(200).json(safeUser);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getPublicProfile = async (req, res, next) => {
+  try {
+    const targetUserId = req.params.id;
+    const user = await userModel.findById(targetUserId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    // Restricted users are hidden from public view (admins and the user themself can still load it)
+    if (['banned', 'suspended'].includes(user.status) && !(req.user && (req.user.role === 'admin' || req.user.userId === targetUserId))) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Determine what to hide based on visibility_settings
+    // If visibility_settings is null, use defaults (false)
+    const visibility = user.visibility_settings || { mobile: false, address: false };
+

@@ -62,3 +62,6 @@ const findByConsumer = async (consumerId, options = {}) => {
   return { bookings: result.rows, totalCount };
 };
 
+const findByProvider = async (providerId, options = {}) => {
+  const { limit = 20, offset = 0, upcoming = false } = options;
+
