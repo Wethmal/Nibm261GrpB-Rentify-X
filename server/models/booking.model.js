@@ -62,3 +62,51 @@ const findByConsumer = async (consumerId, options = {}) => {
   return { bookings: result.rows, totalCount };
 };
 
+const findByProvider = async (providerId, options = {}) => {
+  const { limit = 20, offset = 0, upcoming = false } = options;
+
+  let dateFilter = '';
+  if (upcoming) {
+    dateFilter = `AND b.scheduled_date >= CURRENT_DATE AND b.status IN ('pending', 'confirmed')`;
+  }
+
+  const countSql = `SELECT COUNT(*) FROM bookings b WHERE b.provider_id = $1 ${dateFilter}`;
+  const countRes = await query(countSql, [providerId]);
+  const totalCount = parseInt(countRes.rows[0].count, 10);
+
+  const sql = `
+    SELECT b.*,
+           COALESCE(sl.id, el.id) AS primary_listing_id,
+           COALESCE(sl.title, el.title, '') AS listing_title,
+           COALESCE(sl.photos, el.photos, '[]'::jsonb) AS listing_photos,
+           COALESCE(sl.district, el.district, '') AS listing_district,
+           sl.title AS service_listing_title,
+           el.title AS equipment_listing_title,
+           c.full_name AS consumer_name
+    FROM bookings b
+    LEFT JOIN listings sl ON b.service_listing_id = sl.id
+    LEFT JOIN listings el ON b.equipment_listing_id = el.id
+    LEFT JOIN users c ON b.consumer_id = c.id
+    WHERE b.provider_id = $1 ${dateFilter}
+    ORDER BY b.scheduled_date ASC, b.scheduled_time ASC
+    LIMIT $2 OFFSET $3
+  `;
+  const result = await query(sql, [providerId, limit, offset]);
+  return { bookings: result.rows, totalCount };
+};
+
+const create = async (bookingData) => {
+  const {
+    consumer_id,
+    provider_id,
+    service_listing_id,
+    equipment_listing_id,
+    equipment_items = [],
+    booking_type,
+    scheduled_date,
+    scheduled_time,
+    duration_hours,
+    total_price,
+    notes
+  } = bookingData;
+
