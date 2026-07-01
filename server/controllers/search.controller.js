@@ -26,3 +26,18 @@ const search = async (req, res, next) => {
     const whereParts = ["l.status = 'active'", "NOT EXISTS (SELECT 1 FROM users ru WHERE ru.id = l.provider_id AND ru.status IN ('banned', 'suspended'))"];
     const values = [];
 
+    if (categoryId) {
+      values.push(categoryId);
+      whereParts.push(`l.category_id = $${values.length}`);
+    }
+
+    if (district) {
+      values.push(district);
+      whereParts.push(`l.district ILIKE $${values.length}`);
+    }
+
+    if (type) {
+      values.push(type);
+      whereParts.push(`l.type = $${values.length}`);
+    }
+
