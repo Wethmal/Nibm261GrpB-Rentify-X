@@ -32,3 +32,36 @@ export const DISTRICT_COORDINATES = {
 };
 
 /** Resolve a city name or Sri Lankan postal code to coordinates. Returns { lat, lng, label } or null. */
+export async function geocodeSriLanka(input) {
+  const q = String(input || '').trim();
+  if (!q) return null;
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=lk&q=${encodeURIComponent(q)}`;
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows[0]) {
+        return { lat: parseFloat(rows[0].lat), lng: parseFloat(rows[0].lon), label: rows[0].display_name.split(',').slice(0, 2).join(',') };
+      }
+    }
+  } catch (err) {
+    /* fall through to the offline table */
+  }
+  const local = DISTRICT_COORDINATES[q.toLowerCase()];
+  return local ? { ...local, label: q } : null;
+}
+
+/** Promise wrapper around the browser Geolocation API. Rejects with { code, message }. */
+export function getCurrentPosition(options = { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }) {
+  return new Promise((resolve, reject) => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      reject({ code: 'unsupported', message: 'Your browser does not support location access.' });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => reject({ code: err.code === 1 ? 'denied' : 'unavailable', message: err.message }),
+      options
+    );
+  });
+}
