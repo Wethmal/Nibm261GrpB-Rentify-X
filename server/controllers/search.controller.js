@@ -41,3 +41,18 @@ const search = async (req, res, next) => {
       whereParts.push(`l.type = $${values.length}`);
     }
 
+    if (minPrice && !isNaN(Number(minPrice))) {
+      values.push(Number(minPrice));
+      whereParts.push(`l.price_per_unit >= $${values.length}`);
+    }
+
+    if (maxPrice && !isNaN(Number(maxPrice))) {
+      values.push(Number(maxPrice));
+      whereParts.push(`l.price_per_unit <= $${values.length}`);
+    }
+
+    if (minRating && !isNaN(Number(minRating))) {
+      values.push(Number(minRating));
+      whereParts.push(`l.average_rating >= $${values.length}`);
+    }
+

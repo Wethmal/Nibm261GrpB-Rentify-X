@@ -15,3 +15,6 @@ const searchController = require('../controllers/search.controller');
 router.get('/', searchController.search);
 
 // GET /api/v1/search/categories — Get all active categories for search filters
+router.get('/categories', searchController.getCategories);
+
+// GET /api/v1/search/nearby — Geo-based search for nearby listings
