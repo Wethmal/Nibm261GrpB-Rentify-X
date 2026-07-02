@@ -18,3 +18,6 @@ router.get('/', searchController.search);
 router.get('/categories', searchController.getCategories);
 
 // GET /api/v1/search/nearby — Geo-based search for nearby listings
+router.get('/nearby', searchController.searchNearby);
+
+module.exports = router;
