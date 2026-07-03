@@ -26,3 +26,54 @@ const search = async (req, res, next) => {
     const whereParts = ["l.status = 'active'", "NOT EXISTS (SELECT 1 FROM users ru WHERE ru.id = l.provider_id AND ru.status IN ('banned', 'suspended'))"];
     const values = [];
 
+    if (categoryId) {
+      values.push(categoryId);
+      whereParts.push(`l.category_id = $${values.length}`);
+    }
+
+    if (district) {
+      values.push(district);
+      whereParts.push(`l.district ILIKE $${values.length}`);
+    }
+
+    if (type) {
+      values.push(type);
+      whereParts.push(`l.type = $${values.length}`);
+    }
+
+    if (minPrice && !isNaN(Number(minPrice))) {
+      values.push(Number(minPrice));
+      whereParts.push(`l.price_per_unit >= $${values.length}`);
+    }
+
+    if (maxPrice && !isNaN(Number(maxPrice))) {
+      values.push(Number(maxPrice));
+      whereParts.push(`l.price_per_unit <= $${values.length}`);
+    }
+
+    if (minRating && !isNaN(Number(minRating))) {
+      values.push(Number(minRating));
+      whereParts.push(`l.average_rating >= $${values.length}`);
+    }
+
+    if (q) {
+      values.push(`%${q}%`);
+      const ilikeIndex = values.length;
+      values.push(q);
+      const rawIndex = values.length;
+
+      whereParts.push(`(l.title ILIKE $${ilikeIndex} OR l.description ILIKE $${ilikeIndex} OR l.title % $${rawIndex} OR l.description % $${rawIndex})`);
+    }
+
+    let orderBy = 'ORDER BY l.created_at DESC';
+    if (sortBy === 'price_asc' || sortBy === 'price') {
+      orderBy = 'ORDER BY l.price_per_unit ASC';
+    } else if (sortBy === 'price_desc') {
+      orderBy = 'ORDER BY l.price_per_unit DESC';
+    } else if (sortBy === 'newest' || sortBy === 'created_at') {
+      orderBy = 'ORDER BY l.created_at DESC';
+    } else if (sortBy === 'relevance' && q) {
+      const rawIndex = values.indexOf(q) + 1;
+      orderBy = `ORDER BY similarity(l.title, $${rawIndex}) DESC, similarity(l.description, $${rawIndex}) DESC`;
+    }
+

@@ -39,3 +39,5 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 // --- Consumer Pages ---
 import HomePage from './pages/consumer/HomePage.jsx';
 import SearchPage from './pages/consumer/SearchPage.jsx';
+import ListingDetailPage from './pages/consumer/ListingDetailPage.jsx';
+import BookingHistoryPage from './pages/consumer/BookingHistoryPage.jsx';
