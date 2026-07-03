@@ -187,3 +187,18 @@ const findAll = async (filters = {}, pagination = {}) => {
   const { provider_id, category_id, type, status = 'active', q, district, min_price, max_price } = filters;
   const { limit = 20, offset = 0 } = pagination;
 
+  const whereParts = [];
+  const values = [];
+
+  if (status !== 'all') {
+    values.push(status);
+    whereParts.push(`l.status = $${values.length}`);
+  } else {
+    whereParts.push("l.status != 'deleted'");
+  }
+
+  if (provider_id) {
+    values.push(provider_id);
+    whereParts.push(`l.provider_id = $${values.length}`);
+  }
+

@@ -205,3 +205,34 @@ const create = async (req, res, next) => {
         // 1. Log to admin moderation queue
         console.log(`[Admin Moderation Queue] Listing pending approval: ${listing.id}`);
 
+        // 2. Fetch all admin users
+        const admins = await userModel.findAdmins();
+
+        // 3. Create a notification record for each admin user
+        for (const admin of admins) {
+          await notificationModel.create({
+            user_id: admin.id,
+            type: 'listing_pending_review',
+            title: 'New Listing Pending Review',
+            body: `A new service listing "${listing.title}" is pending approval.`,
+            metadata: { listingId: listing.id }
+          });
+        }
+      } catch (err) {
+        console.error('Error in admin notification trigger:', err);
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const update = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
+    }
+
+    const { id } = req.params;
+    const listing = await listingModel.findById(id);
+

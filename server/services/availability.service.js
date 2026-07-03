@@ -52,3 +52,6 @@ const checkAvailability = async (listingId, date, time, durationHours) => {
     return { isAvailable: false, nextAvailableDate: nextDate };
   }
 
+  return { isAvailable: true };
+};
+
