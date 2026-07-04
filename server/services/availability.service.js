@@ -55,3 +55,6 @@ const checkAvailability = async (listingId, date, time, durationHours) => {
   return { isAvailable: true };
 };
 
+/**
+ * Helper to scan forward for the next available date.
+ */

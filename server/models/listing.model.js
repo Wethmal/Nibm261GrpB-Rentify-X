@@ -202,3 +202,18 @@ const findAll = async (filters = {}, pagination = {}) => {
     whereParts.push(`l.provider_id = $${values.length}`);
   }
 
+  if (category_id) {
+    values.push(category_id);
+    whereParts.push(`l.category_id = $${values.length}`);
+  }
+
+  if (type) {
+    values.push(type);
+    whereParts.push(`l.type = $${values.length}`);
+  }
+
+  if (district) {
+    values.push(district);
+    whereParts.push(`l.district ILIKE $${values.length}`);
+  }
+

@@ -236,3 +236,20 @@ const update = async (req, res, next) => {
     const { id } = req.params;
     const listing = await listingModel.findById(id);
 
+    if (!listing) {
+      return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
+    }
+
+    if (listing.provider_id !== req.user.userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You do not own this listing' });
+    }
+
+    const updatePayload = { ...req.body };
+    if (updatePayload.district && (!updatePayload.geo_lat || !updatePayload.geo_lng)) {
+      const coords = DISTRICT_COORDINATES[updatePayload.district];
+      if (coords) {
+        updatePayload.geo_lat = updatePayload.geo_lat || coords.lat;
+        updatePayload.geo_lng = updatePayload.geo_lng || coords.lng;
+      }
+    }
+
