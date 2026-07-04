@@ -58,3 +58,11 @@ const checkAvailability = async (listingId, date, time, durationHours) => {
 /**
  * Helper to scan forward for the next available date.
  */
+const findNextAvailableDate = async (listing, startDate, time, durationHours) => {
+  let currentDate = new Date(startDate);
+  let attempts = 0;
+  
+  while (attempts < 30) {
+    currentDate.setDate(currentDate.getDate() + 1);
+    const dateStr = currentDate.toISOString().split('T')[0];
+    

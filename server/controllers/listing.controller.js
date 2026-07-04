@@ -253,3 +253,23 @@ const update = async (req, res, next) => {
       }
     }
 
+    const updatedListing = await listingModel.update(id, updatePayload);
+    res.status(200).json({ message: 'Listing updated successfully', listing: updatedListing });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const remove = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
+    }
+
+    const { id } = req.params;
+    const listing = await listingModel.findById(id);
+
+    if (!listing) {
+      return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
+    }
+

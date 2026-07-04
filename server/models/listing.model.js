@@ -217,3 +217,13 @@ const findAll = async (filters = {}, pagination = {}) => {
     whereParts.push(`l.district ILIKE $${values.length}`);
   }
 
+  if (min_price !== undefined && min_price !== '' && !Number.isNaN(Number(min_price))) {
+    values.push(Number(min_price));
+    whereParts.push(`l.price_per_unit >= $${values.length}`);
+  }
+
+  if (max_price !== undefined && max_price !== '' && !Number.isNaN(Number(max_price))) {
+    values.push(Number(max_price));
+    whereParts.push(`l.price_per_unit <= $${values.length}`);
+  }
+
