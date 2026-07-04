@@ -273,3 +273,21 @@ const remove = async (req, res, next) => {
       return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
     }
 
+    if (listing.provider_id !== req.user.userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You do not own this listing' });
+    }
+
+    await listingModel.softDelete(id);
+
+    const { query } = require('../config/db');
+    await query(
+      "UPDATE bookings SET status = 'cancelled' WHERE (service_listing_id = $1 OR equipment_listing_id = $1) AND status = 'pending'",
+      [id]
+    );
+
+    res.status(200).json({ message: 'Listing deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+

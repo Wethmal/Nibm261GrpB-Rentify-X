@@ -66,3 +66,15 @@ const findNextAvailableDate = async (listing, startDate, time, durationHours) =>
     currentDate.setDate(currentDate.getDate() + 1);
     const dateStr = currentDate.toISOString().split('T')[0];
     
+    // Check listing_availability if equipment
+    let isBlocked = false;
+    if (listing.type === 'equipment') {
+      const availRes = await query(
+        'SELECT is_available FROM listing_availability WHERE listing_id = $1 AND date = $2',
+        [listing.id, dateStr]
+      );
+      if (availRes.rowCount > 0 && availRes.rows[0].is_available === false) {
+        isBlocked = true;
+      }
+    }
+    

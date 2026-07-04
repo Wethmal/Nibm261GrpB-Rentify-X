@@ -227,3 +227,14 @@ const findAll = async (filters = {}, pagination = {}) => {
     whereParts.push(`l.price_per_unit <= $${values.length}`);
   }
 
+  if (q) {
+    values.push(`%${q}%`);
+    whereParts.push(`(l.title ILIKE $${values.length} OR l.description ILIKE $${values.length})`);
+  }
+
+  const whereClause = whereParts.length > 0 ? 'WHERE ' + whereParts.join(' AND ') : '';
+
+  const countSql = `SELECT COUNT(*) FROM listings l ${whereClause}`;
+  const countRes = await query(countSql, values);
+  const total = parseInt(countRes.rows[0].count, 10);
+
