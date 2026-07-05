@@ -69,3 +69,136 @@ describe('Booking Endpoints & Availability Service', () => {
     `, [providerId, categoryId]);
     activeListingId = activeListRes.rows[0].id;
 
+    // Create inactive service listing
+    const inactiveListRes = await query(`
+      INSERT INTO listings (provider_id, category_id, title, description, type, status, price_per_unit, unit_label, district)
+      VALUES ($1, $2, 'Pending AC Repair', 'Need AC Repair service', 'service', 'pending_approval', 2000, 'hour', 'Colombo')
+      RETURNING id
+    `, [providerId, categoryId]);
+    inactiveListingId = inactiveListRes.rows[0].id;
+
+    // Create active equipment listing
+    const equipListRes = await query(`
+      INSERT INTO listings (provider_id, category_id, title, description, type, status, price_per_unit, unit_label, district)
+      VALUES ($1, $2, 'Camera Tripod', 'Heavy duty camera tripod', 'equipment', 'active', 1000, 'day', 'Colombo')
+      RETURNING id
+    `, [providerId, equipmentCategoryId]);
+    equipmentListingId = equipListRes.rows[0].id;
+  });
+
+  afterAll(async () => {
+    // Cleanup tables
+    await query('TRUNCATE TABLE bookings, notifications, listing_availability, listings, categories, users CASCADE');
+  });
+
+  it('should require authentication to fetch bookings', async () => {
+    const res = await request(app).get('/api/v1/bookings');
+    expect(res.statusCode).toEqual(401);
+  });
+
+  describe('POST /api/v1/bookings', () => {
+    it('should require authentication to create a booking request', async () => {
+      const res = await request(app)
+        .post('/api/v1/bookings')
+        .send({
+          listing_id: activeListingId,
+          scheduled_date: '2026-07-01',
+          scheduled_time: '10:00',
+          duration: 2
+        });
+      expect(res.statusCode).toEqual(401);
+    });
+
+    it('should return 403 Forbidden if the requester is not a consumer', async () => {
+      const res = await request(app)
+        .post('/api/v1/bookings')
+        .set('Authorization', `Bearer ${providerToken}`)
+        .send({
+          listing_id: activeListingId,
+          scheduled_date: '2026-07-01',
+          scheduled_time: '10:00',
+          duration: 2
+        });
+      expect(res.statusCode).toEqual(403);
+      expect(res.body.error).toEqual('Forbidden');
+    });
+
+    it('should return 400 Bad Request if required fields are missing', async () => {
+      const res = await request(app)
+        .post('/api/v1/bookings')
+        .set('Authorization', `Bearer ${consumerToken}`)
+        .send({
+          listing_id: activeListingId,
+          scheduled_date: '2026-07-01'
+        });
+      expect(res.statusCode).toEqual(400);
+      expect(res.body.error).toEqual('Bad Request');
+    });
+
+    it('should return 404 Not Found if listing does not exist', async () => {
+      const nonExistentId = '00000000-0000-0000-0000-000000000000';
+      const res = await request(app)
+        .post('/api/v1/bookings')
+        .set('Authorization', `Bearer ${consumerToken}`)
+        .send({
+          listing_id: nonExistentId,
+          scheduled_date: '2026-07-01',
+          scheduled_time: '10:00',
+          duration: 2
+        });
+      expect(res.statusCode).toEqual(404);
+      expect(res.body.error).toEqual('Not Found');
+    });
+
+    it('should return 404 Not Found if listing is inactive', async () => {
+      const res = await request(app)
+        .post('/api/v1/bookings')
+        .set('Authorization', `Bearer ${consumerToken}`)
+        .send({
+          listing_id: inactiveListingId,
+          scheduled_date: '2026-07-01',
+          scheduled_time: '10:00',
+          duration: 2
+        });
+      expect(res.statusCode).toEqual(404);
+      expect(res.body.error).toEqual('Not Found');
+    });
+
+    it('should successfully create a pending booking request and notify the provider asynchronously', async () => {
+      const res = await request(app)
+        .post('/api/v1/bookings')
+        .set('Authorization', `Bearer ${consumerToken}`)
+        .send({
+          listing_id: activeListingId,
+          scheduled_date: '2026-07-01',
+          scheduled_time: '10:00',
+          duration: 2,
+          notes: 'Please bring testing equipment'
+        });
+
+      expect(res.statusCode).toEqual(201);
+      expect(res.body).toHaveProperty('bookingId');
+      expect(res.body.booking.status).toEqual('pending');
+      expect(res.body.booking.consumer_id).toEqual(consumerId);
+      expect(res.body.booking.provider_id).toEqual(providerId);
+
+      // Wait a moment to ensure async setImmediate fires
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Verify notification created for provider
+      const notifications = await query(
+        'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+        [providerId]
+      );
+      expect(notifications.rows.length).toEqual(1);
+      expect(notifications.rows[0].type).toEqual('new_booking_request');
+      expect(notifications.rows[0].metadata.bookingId).toEqual(res.body.bookingId);
+      expect(notifications.rows[0].metadata.consumerName).toEqual('Consumer Booking');
+      expect(notifications.rows[0].metadata.scheduledDate).toEqual('2026-07-01');
+    });
+
+    it('should successfully create a bundle booking with correct combined price (US13)', async () => {
+      // Assuming activeListingId is a service and equipmentListingId is an equipment
+      // Since we don't know the exact prices in the test suite setup, we can fetch them first
+      const dbRes = await query('SELECT id, price_per_unit, type FROM listings WHERE id IN ($1, $2)', [activeListingId, equipmentListingId]);
+
