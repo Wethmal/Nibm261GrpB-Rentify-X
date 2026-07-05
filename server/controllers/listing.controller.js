@@ -291,3 +291,32 @@ const remove = async (req, res, next) => {
   }
 };
 
+const getAvailability = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { query } = require('../config/db');
+
+    // Fetch availability records
+    const result = await query(
+      'SELECT date, is_available, blocked_reason FROM listing_availability WHERE listing_id = $1 ORDER BY date ASC',
+      [id]
+    );
+
+    // Also fetch confirmed bookings for this listing to show as locked slots
+    const bookingsResult = await query(
+      `SELECT scheduled_date, scheduled_time, duration_hours, status 
+       FROM bookings 
+       WHERE (equipment_listing_id = $1 OR service_listing_id = $1)
+       AND status = 'confirmed'`,
+      [id]
+    );
+
+    res.status(200).json({
+      availability: result.rows,
+      bookings: bookingsResult.rows
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

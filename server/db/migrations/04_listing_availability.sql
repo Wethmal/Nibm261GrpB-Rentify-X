@@ -9,3 +9,12 @@ CREATE TABLE IF NOT EXISTS listing_availability (
     is_available BOOLEAN DEFAULT false,
     blocked_reason VARCHAR(255),
     
+    -- Metadata
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Ensure only one record per date per listing
+    UNIQUE (listing_id, date)
+);
+
+CREATE INDEX idx_listing_availability_date ON listing_availability(listing_id, date);

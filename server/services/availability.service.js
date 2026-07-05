@@ -78,3 +78,26 @@ const findNextAvailableDate = async (listing, startDate, time, durationHours) =>
       }
     }
     
+    if (!isBlocked) {
+      // Check bookings overlap
+      const conflictSql = `
+        SELECT 1 FROM bookings
+        WHERE (service_listing_id = $1 OR equipment_listing_id = $1)
+          AND status = 'confirmed'
+          AND scheduled_date = $2
+          AND (
+            (scheduled_time, scheduled_time + (duration_hours || ' hours')::INTERVAL)
+            OVERLAPS
+            ($3::TIME, $3::TIME + ($4 || ' hours')::INTERVAL)
+          )
+      `;
+      const bookingsRes = await query(conflictSql, [listing.id, dateStr, time, durationHours]);
+      if (bookingsRes.rowCount === 0) {
+        return dateStr;
+      }
+    }
+    attempts++;
+  }
+  return null;
+};
+

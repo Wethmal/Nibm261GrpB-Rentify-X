@@ -238,3 +238,25 @@ const findAll = async (filters = {}, pagination = {}) => {
   const countRes = await query(countSql, values);
   const total = parseInt(countRes.rows[0].count, 10);
 
+  const fetchSql = `
+    SELECT l.*,
+           c.name AS category_name,
+           u.full_name AS provider_name,
+           u.email AS provider_email,
+           u.mobile AS provider_mobile,
+           u.profile_photo_url AS provider_avatar,
+           u.trust_score AS provider_trust_score
+    FROM listings l
+    LEFT JOIN categories c ON l.category_id = c.id
+    LEFT JOIN users u ON l.provider_id = u.id
+    ${whereClause}
+    ORDER BY l.created_at DESC
+    LIMIT $${values.length + 1} OFFSET $${values.length + 2}
+  `;
+
+  const fetchValues = [...values, limit, offset];
+  const { rows } = await query(fetchSql, fetchValues);
+
+  return { results: rows, total };
+};
+
