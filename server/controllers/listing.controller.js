@@ -320,3 +320,19 @@ const getAvailability = async (req, res, next) => {
   }
 };
 
+const updateAvailability = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { dates } = req.body; // Expects array: [{ date: 'YYYY-MM-DD', isAvailable: boolean, blockedReason: string }]
+    const { query, getClient } = require('../config/db');
+
+    // Verify ownership
+    const listing = await listingModel.findById(id);
+    if (!listing) {
+      return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
+    }
+
+    if (listing.provider_id !== req.user.userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You do not own this listing' });
+    }
+

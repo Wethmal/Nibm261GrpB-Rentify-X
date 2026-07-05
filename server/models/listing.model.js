@@ -260,3 +260,9 @@ const findAll = async (filters = {}, pagination = {}) => {
   return { results: rows, total };
 };
 
+const updatePhotos = async (id, photos) => {
+  const result = await query('UPDATE listings SET photos = $1 WHERE id = $2 RETURNING *', [JSON.stringify(photos), id]);
+  return result.rows[0];
+};
+
+module.exports = { findById, search, findAll, create, update, updateStatus, softDelete, getAvailability, upsertAvailability, updatePhotos };

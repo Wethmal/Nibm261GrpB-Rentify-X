@@ -101,3 +101,4 @@ const findNextAvailableDate = async (listing, startDate, time, durationHours) =>
   return null;
 };
 
+module.exports = { checkAvailability };
