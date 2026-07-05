@@ -151,3 +151,14 @@ const getById = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
     }
 
+    const { id } = req.params;
+    const booking = await bookingModel.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    }
+
+    if (booking.consumer_id !== req.user.userId && booking.provider_id !== req.user.userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You are not authorized to view this booking' });
+    }
+

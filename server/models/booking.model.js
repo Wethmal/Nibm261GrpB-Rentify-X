@@ -110,3 +110,7 @@ const create = async (bookingData) => {
     notes
   } = bookingData;
 
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+

@@ -336,3 +336,34 @@ const updateAvailability = async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden', message: 'You do not own this listing' });
     }
 
+    if (!Array.isArray(dates)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'dates array is required' });
+    }
+
+    const client = await getClient();
+    try {
+      await client.query('BEGIN');
+
+      for (const d of dates) {
+        // Prevent blocking a date if there is already a confirmed booking
+        if (!d.isAvailable) {
+          const conflictRes = await client.query(
+            `SELECT 1 FROM bookings 
+             WHERE (equipment_listing_id = $1 OR service_listing_id = $1)
+             AND scheduled_date = $2 AND status = 'confirmed'`,
+            [id, d.date]
+          );
+          if (conflictRes.rowCount > 0) {
+            throw new Error(`Cannot block ${d.date} because there is a confirmed booking on this date.`);
+          }
+        }
+
+        await client.query(
+          `INSERT INTO listing_availability (listing_id, date, is_available, blocked_reason)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (listing_id, date)
+           DO UPDATE SET is_available = EXCLUDED.is_available, blocked_reason = EXCLUDED.blocked_reason, updated_at = NOW()`,
+          [id, d.date, d.isAvailable, d.blockedReason || null]
+        );
+      }
+
