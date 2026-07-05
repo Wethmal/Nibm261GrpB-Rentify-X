@@ -41,3 +41,6 @@ import HomePage from './pages/consumer/HomePage.jsx';
 import SearchPage from './pages/consumer/SearchPage.jsx';
 import ListingDetailPage from './pages/consumer/ListingDetailPage.jsx';
 import BookingHistoryPage from './pages/consumer/BookingHistoryPage.jsx';
+import BundleBookingPage from './pages/consumer/BundleBookingPage.jsx';
+import ProviderProfilePage from './pages/consumer/ProviderProfilePage.jsx';
+
