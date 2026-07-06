@@ -110,3 +110,48 @@ const create = async (bookingData) => {
     notes
   } = bookingData;
 
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Lock the listings using SELECT FOR UPDATE
+    const listingIds = [];
+    if (service_listing_id) listingIds.push(service_listing_id);
+    if (equipment_listing_id) listingIds.push(equipment_listing_id);
+    for (const item of equipment_items) {
+      if (!listingIds.includes(item.id)) listingIds.push(item.id);
+    }
+
+    // Sort to prevent deadlocks
+    listingIds.sort();
+
+    for (const lid of listingIds) {
+      await client.query('SELECT 1 FROM listings WHERE id = $1 FOR UPDATE', [lid]);
+
+      const blockedRes = await client.query(
+        `SELECT 1 FROM listing_availability
+         WHERE listing_id = $1 AND date = $2 AND is_available = false`,
+        [lid, scheduled_date]
+      );
+      if (blockedRes.rowCount > 0) {
+        throw new Error('AvailabilityConflict');
+      }
+
+      // 2. Perform booking conflict check inside transaction
+      const conflictSql = `
+        SELECT 1 FROM bookings
+        WHERE (service_listing_id = $1 OR equipment_listing_id = $1)
+          AND status = 'confirmed'
+          AND scheduled_date = $2
+          AND (
+            (scheduled_time, scheduled_time + (duration_hours || ' hours')::INTERVAL)
+            OVERLAPS
+            ($3::TIME, $3::TIME + ($4 || ' hours')::INTERVAL)
+          )
+      `;
+      const conflictRes = await client.query(conflictSql, [lid, scheduled_date, scheduled_time, duration_hours]);
+      if (conflictRes.rowCount > 0) {
+        throw new Error('AvailabilityConflict');
+      }
+    }
+

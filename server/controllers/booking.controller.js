@@ -151,3 +151,61 @@ const getById = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
     }
 
+    const { id } = req.params;
+    const booking = await bookingModel.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    }
+
+    if (booking.consumer_id !== req.user.userId && booking.provider_id !== req.user.userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You are not authorized to view this booking' });
+    }
+
+    const eq = await query(
+      `SELECT be.listing_id, be.price, l.title FROM booking_equipment be
+       JOIN listings l ON l.id = be.listing_id WHERE be.booking_id = $1`, [id]
+    ).catch(() => ({ rows: [] }));
+    res.status(200).json({ ...booking, equipment_items: eq.rows });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const accept = async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== 'provider') {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only providers can accept bookings' });
+    }
+
+    const { id } = req.params;
+    const booking = await bookingModel.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    }
+
+    if (booking.provider_id !== req.user.userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'You can only manage your own bookings' });
+    }
+
+    if (booking.status !== 'pending') {
+      return res.status(400).json({ error: 'Bad Request', message: 'Can only accept pending bookings' });
+    }
+
+    const listingIds = [booking.service_listing_id, booking.equipment_listing_id].filter(Boolean);
+    for (const listingId of listingIds) {
+      const hasConflict = await bookingModel.checkAvailabilityConflict(
+        listingId,
+        booking.scheduled_date,
+        booking.scheduled_time,
+        booking.duration_hours
+      );
+
+      if (hasConflict) {
+        return res.status(409).json({ error: 'Conflict', message: 'This slot is already confirmed or blocked' });
+      }
+    }
+
+    const updatedBooking = await bookingModel.updateStatus(id, 'confirmed');
+
