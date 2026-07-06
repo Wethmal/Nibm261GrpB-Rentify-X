@@ -399,3 +399,26 @@ const uploadPhotos = async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden', message: 'You do not own this listing' });
     }
 
+    // Check files presence
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'Bad Request', message: 'No photos uploaded' });
+    }
+
+    // Rejects >10 files with 422
+    if (req.files.length > 10) {
+      return res.status(422).json({ error: 'Unprocessable Entity', message: 'Cannot upload more than 10 photos' });
+    }
+
+    // Extract URLs from multer (supports Cloudinary or local disk storage)
+    const photoUrls = req.files.map(file => {
+      const url = file.path || file.secure_url;
+      if (url && /^https?:\/\//i.test(url)) {
+        return url;
+      }
+      return `/uploads/listings/${file.filename}`;
+    });
+
+    // Update listings.photos JSONB array in DB atomically
+    const currentPhotos = Array.isArray(listing.photos) ? listing.photos : [];
+    const updatedPhotos = [...currentPhotos, ...photoUrls];
+

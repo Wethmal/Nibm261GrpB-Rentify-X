@@ -122,3 +122,9 @@ const create = async (bookingData) => {
       if (!listingIds.includes(item.id)) listingIds.push(item.id);
     }
 
+    // Sort to prevent deadlocks
+    listingIds.sort();
+
+    for (const lid of listingIds) {
+      await client.query('SELECT 1 FROM listings WHERE id = $1 FOR UPDATE', [lid]);
+

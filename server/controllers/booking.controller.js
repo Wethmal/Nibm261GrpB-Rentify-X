@@ -178,3 +178,10 @@ const accept = async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden', message: 'Only providers can accept bookings' });
     }
 
+    const { id } = req.params;
+    const booking = await bookingModel.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    }
+
