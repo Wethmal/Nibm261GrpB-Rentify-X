@@ -44,3 +44,4 @@ import BookingHistoryPage from './pages/consumer/BookingHistoryPage.jsx';
 import BundleBookingPage from './pages/consumer/BundleBookingPage.jsx';
 import ProviderProfilePage from './pages/consumer/ProviderProfilePage.jsx';
 
+// --- Provider Pages ---
