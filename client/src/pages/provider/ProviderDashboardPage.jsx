@@ -200,3 +200,82 @@ function ProviderDashboardPage() {
     }
   };
 
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingListing) return;
+    try {
+      setUpdating(true);
+      const payload = {
+        title: editFormData.title,
+        description: editFormData.description,
+        price_per_unit: Number(editFormData.price_per_unit),
+        unit_label: editFormData.unit_label,
+        status: editFormData.status,
+        district: editFormData.district,
+        geo_lat: editFormData.geo_lat ? Number(editFormData.geo_lat) : null,
+        geo_lng: editFormData.geo_lng ? Number(editFormData.geo_lng) : null,
+        photos: editFormData.photos
+      };
+
+      const res = await axiosInstance.put(`/listings/${editingListing.id}`, payload);
+      const updated = res.data.listing || res.data;
+
+      setMyListings(prev => prev.map(l => l.id === editingListing.id ? { ...l, ...payload, ...updated } : l));
+      setEditingListing(null);
+    } catch (err) {
+      console.error('Failed to update listing:', err);
+      alert(err.response?.data?.message || 'Failed to update listing');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchDashboardData();
+    }
+  }, [user?.id]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch upcoming bookings (status confirmed)
+      const upcomingRes = await axiosInstance.get('/bookings?upcoming=true&limit=5');
+      const upcoming = upcomingRes.data.bookings || [];
+
+      // Fetch all bookings to calculate stats (in a real app we'd have a specific stats endpoint)
+      const allRes = await axiosInstance.get('/bookings?limit=100');
+      const allBookings = allRes.data.bookings || [];
+
+      const pendingCount = allBookings.filter(b => b.status === 'pending').length;
+
+      // Calculate earnings from completed bookings
+      const earnings = allBookings
+        .filter(b => b.status === 'completed')
+        .reduce((sum, b) => sum + parseFloat(b.total_price || 0), 0);
+
+      // Fetch provider listings
+      const listingsRes = await axiosInstance.get(`/listings?provider_id=${user.id}&status=all`); // status=all to get all except deleted
+      const listings = listingsRes.data.results || [];
+      const pendingListings = listings.filter(l => l.status === 'pending_approval');
+      const activeListings = listings.filter(l => l.status === 'active');
+
+      setUpcomingBookings(upcoming);
+      setStats({
+        totalUpcoming: upcoming.length,
+        pendingRequests: pendingCount,
+        totalEarnings: earnings,
+        activeListingsCount: activeListings.length,
+        pendingListingsCount: pendingListings.length
+      });
+      setMyListings(listings); // Keep all listings for pagination
+
+    } catch (err) {
+      console.error('Failed to fetch dashboard data:', err);
+      setError('Could not load dashboard data.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
