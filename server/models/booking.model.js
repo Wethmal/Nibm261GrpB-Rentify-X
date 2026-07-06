@@ -155,3 +155,22 @@ const create = async (bookingData) => {
       }
     }
 
+    // 3. Insert the booking with status 'pending'
+    const sql = `
+      INSERT INTO bookings (
+        consumer_id,
+        provider_id,
+        service_listing_id,
+        equipment_listing_id,
+        booking_type,
+        status,
+        scheduled_date,
+        scheduled_time,
+        duration_hours,
+        total_price,
+        notes
+      )
+      VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, $9, $10)
+      RETURNING *
+    `;
+

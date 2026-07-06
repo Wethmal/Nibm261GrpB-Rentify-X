@@ -17,3 +17,6 @@ const cancellation = require('../controllers/cancellation.controller');
 router.post('/', authenticate, bookingController.create);
 
 // GET /api/v1/bookings — Get bookings (filtered by query params: consumer_id, provider_id, status)
+router.get('/', authenticate, bookingController.getAll);
+
+// GET /api/v1/bookings/:id — Get booking by ID

@@ -209,3 +209,12 @@ const accept = async (req, res, next) => {
 
     const updatedBooking = await bookingModel.updateStatus(id, 'confirmed');
 
+    res.status(200).json({ message: 'Booking accepted', booking: updatedBooking });
+
+    setImmediate(async () => {
+      try {
+        const listingId = booking.service_listing_id || booking.equipment_listing_id;
+        const listing = await listingModel.findById(listingId);
+        const providerRes = await query('SELECT full_name FROM users WHERE id = $1', [req.user.userId]);
+        const providerName = providerRes.rows[0]?.full_name || 'The provider';
+
