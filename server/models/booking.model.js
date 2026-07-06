@@ -114,3 +114,11 @@ const create = async (bookingData) => {
   try {
     await client.query('BEGIN');
 
+    // 1. Lock the listings using SELECT FOR UPDATE
+    const listingIds = [];
+    if (service_listing_id) listingIds.push(service_listing_id);
+    if (equipment_listing_id) listingIds.push(equipment_listing_id);
+    for (const item of equipment_items) {
+      if (!listingIds.includes(item.id)) listingIds.push(item.id);
+    }
+

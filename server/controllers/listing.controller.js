@@ -367,3 +367,35 @@ const updateAvailability = async (req, res, next) => {
         );
       }
 
+      await client.query('COMMIT');
+      res.status(200).json({ message: 'Availability updated successfully' });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      if (err.message.includes('Cannot block')) {
+        return res.status(409).json({ error: 'Conflict', message: err.message });
+      }
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+const uploadPhotos = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Check if listing exists
+    const listing = await listingModel.findById(id);
+    if (!listing) {
+      return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
+    }
+
+    // Verify ownership: provider_id set from JWT matches, or user is admin
+    const currentUserId = req.user.userId || req.user.id;
+    if (listing.provider_id !== currentUserId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You do not own this listing' });
+    }
+

@@ -162,3 +162,19 @@ const getById = async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden', message: 'You are not authorized to view this booking' });
     }
 
+    const eq = await query(
+      `SELECT be.listing_id, be.price, l.title FROM booking_equipment be
+       JOIN listings l ON l.id = be.listing_id WHERE be.booking_id = $1`, [id]
+    ).catch(() => ({ rows: [] }));
+    res.status(200).json({ ...booking, equipment_items: eq.rows });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const accept = async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== 'provider') {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only providers can accept bookings' });
+    }
+
