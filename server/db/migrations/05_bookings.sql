@@ -11,3 +11,11 @@ BEGIN
     END IF;
 END$$;
 
+CREATE TABLE IF NOT EXISTS bookings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    consumer_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    provider_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    
+    status booking_status_enum NOT NULL DEFAULT 'pending',
+    booking_type booking_type_enum NOT NULL,
+    

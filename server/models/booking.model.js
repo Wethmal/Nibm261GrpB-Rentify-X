@@ -128,3 +128,12 @@ const create = async (bookingData) => {
     for (const lid of listingIds) {
       await client.query('SELECT 1 FROM listings WHERE id = $1 FOR UPDATE', [lid]);
 
+      const blockedRes = await client.query(
+        `SELECT 1 FROM listing_availability
+         WHERE listing_id = $1 AND date = $2 AND is_available = false`,
+        [lid, scheduled_date]
+      );
+      if (blockedRes.rowCount > 0) {
+        throw new Error('AvailabilityConflict');
+      }
+

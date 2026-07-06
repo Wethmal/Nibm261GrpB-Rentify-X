@@ -422,3 +422,16 @@ const uploadPhotos = async (req, res, next) => {
     const currentPhotos = Array.isArray(listing.photos) ? listing.photos : [];
     const updatedPhotos = [...currentPhotos, ...photoUrls];
 
+    await listingModel.updatePhotos(id, updatedPhotos);
+
+    return res.status(200).json({
+      message: 'Photos uploaded successfully',
+      urls: photoUrls,
+      photos: updatedPhotos
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getAll, getById, create, update, remove, getAvailability, updateAvailability, uploadPhotos };

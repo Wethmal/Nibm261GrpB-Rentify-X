@@ -185,3 +185,11 @@ const accept = async (req, res, next) => {
       return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
     }
 
+    if (booking.provider_id !== req.user.userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'You can only manage your own bookings' });
+    }
+
+    if (booking.status !== 'pending') {
+      return res.status(400).json({ error: 'Bad Request', message: 'Can only accept pending bookings' });
+    }
+
