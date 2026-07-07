@@ -193,3 +193,50 @@ const accept = async (req, res, next) => {
       return res.status(400).json({ error: 'Bad Request', message: 'Can only accept pending bookings' });
     }
 
+    const listingIds = [booking.service_listing_id, booking.equipment_listing_id].filter(Boolean);
+    for (const listingId of listingIds) {
+      const hasConflict = await bookingModel.checkAvailabilityConflict(
+        listingId,
+        booking.scheduled_date,
+        booking.scheduled_time,
+        booking.duration_hours
+      );
+
+      if (hasConflict) {
+        return res.status(409).json({ error: 'Conflict', message: 'This slot is already confirmed or blocked' });
+      }
+    }
+
+    const updatedBooking = await bookingModel.updateStatus(id, 'confirmed');
+
+    res.status(200).json({ message: 'Booking accepted', booking: updatedBooking });
+
+    setImmediate(async () => {
+      try {
+        const listingId = booking.service_listing_id || booking.equipment_listing_id;
+        const listing = await listingModel.findById(listingId);
+        const providerRes = await query('SELECT full_name FROM users WHERE id = $1', [req.user.userId]);
+        const providerName = providerRes.rows[0]?.full_name || 'The provider';
+
+        await notificationModel.create({
+          user_id: booking.consumer_id,
+          type: 'booking_accepted',
+          title: 'Booking Accepted',
+          body: `Your booking for "${listing?.title || 'a listing'}" on ${booking.scheduled_date} has been accepted by ${providerName}.`,
+          metadata: { bookingId: id }
+        });
+      } catch (err) {
+        console.error('Failed to send booking_accepted notification:', err);
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const reject = async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== 'provider') {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only providers can reject bookings' });
+    }
+

@@ -19,3 +19,14 @@ CREATE TABLE IF NOT EXISTS bookings (
     status booking_status_enum NOT NULL DEFAULT 'pending',
     booking_type booking_type_enum NOT NULL,
     
+    -- Nullable listing references to support single service, single equipment, or bundles
+    service_listing_id UUID REFERENCES listings(id) ON DELETE RESTRICT,
+    equipment_listing_id UUID REFERENCES listings(id) ON DELETE RESTRICT,
+    
+    scheduled_date DATE NOT NULL,
+    scheduled_time TIME NOT NULL,
+    duration_hours DECIMAL NOT NULL,
+    
+    total_price DECIMAL(10, 2) NOT NULL,
+    notes TEXT,
+    

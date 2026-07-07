@@ -45,3 +45,5 @@ import BundleBookingPage from './pages/consumer/BundleBookingPage.jsx';
 import ProviderProfilePage from './pages/consumer/ProviderProfilePage.jsx';
 
 // --- Provider Pages ---
+import ProviderDashboardPage from './pages/provider/ProviderDashboardPage.jsx';
+import CreateServiceListingPage from './pages/provider/CreateServiceListingPage.jsx';

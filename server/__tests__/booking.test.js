@@ -202,3 +202,114 @@ describe('Booking Endpoints & Availability Service', () => {
       // Since we don't know the exact prices in the test suite setup, we can fetch them first
       const dbRes = await query('SELECT id, price_per_unit, type FROM listings WHERE id IN ($1, $2)', [activeListingId, equipmentListingId]);
 
+      let servicePrice = 0, equipmentPrice = 0;
+      dbRes.rows.forEach(r => {
+        if (r.id === activeListingId) servicePrice = Number(r.price_per_unit);
+        if (r.id === equipmentListingId) equipmentPrice = Number(r.price_per_unit);
+      });
+
+      const expectedTotal = (servicePrice + equipmentPrice) * 3; // 3 hours
+
+      const res = await request(app)
+        .post('/api/v1/bookings')
+        .set('Authorization', `Bearer ${consumerToken}`)
+        .send({
+          listing_id: activeListingId,
+          equipment_listing_id: equipmentListingId,
+          scheduled_date: '2026-07-05',
+          scheduled_time: '14:00',
+          duration: 3
+        });
+
+      expect(res.statusCode).toEqual(201);
+      expect(res.body.booking.booking_type).toEqual('bundle');
+      expect(res.body.booking.service_listing_id).toEqual(activeListingId);
+      expect(res.body.booking.equipment_listing_id).toEqual(equipmentListingId);
+      expect(Number(res.body.booking.total_price)).toEqual(expectedTotal);
+    });
+
+    it('should return 409 Conflict if booking overlaps with a confirmed booking', async () => {
+      const res1 = await request(app)
+        .post('/api/v1/bookings')
+        .set('Authorization', `Bearer ${consumerToken}`)
+        .send({
+          listing_id: activeListingId,
+          scheduled_date: '2026-07-02',
+          scheduled_time: '14:00',
+          duration: 2
+        });
+      expect(res1.statusCode).toEqual(201);
+      const firstBookingId = res1.body.bookingId;
+
+      // Confirm the first booking
+      await query("UPDATE bookings SET status = 'confirmed' WHERE id = $1", [firstBookingId]);
+
+      // Conflicting slot (overlaps 14:00 to 16:00)
+      const res2 = await request(app)
+        .post('/api/v1/bookings')
+        .set('Authorization', `Bearer ${consumerToken}`)
+        .send({
+          listing_id: activeListingId,
+          scheduled_date: '2026-07-02',
+          scheduled_time: '15:00',
+          duration: 2
+        });
+      expect(res2.statusCode).toEqual(409);
+      expect(res2.body.error).toEqual('Conflict');
+
+      // Non-overlapping slot (16:00 to 18:00) should succeed
+      const res3 = await request(app)
+        .post('/api/v1/bookings')
+        .set('Authorization', `Bearer ${consumerToken}`)
+        .send({
+          listing_id: activeListingId,
+          scheduled_date: '2026-07-02',
+          scheduled_time: '16:00',
+          duration: 2
+        });
+      expect(res3.statusCode).toEqual(201);
+    });
+  });
+
+  describe('Availability Service (US011-ST04)', () => {
+    it('should return isAvailable: true for clear dates', async () => {
+      const result = await availabilityService.checkAvailability(activeListingId, '2026-07-10', '10:00', 2);
+      expect(result.isAvailable).toBe(true);
+    });
+
+    it('should return isAvailable: false and nextAvailableDate hint on booking overlap conflict', async () => {
+      // 1. Create a confirmed booking for 2026-07-15 10:00 to 12:00
+      const res = await request(app)
+        .post('/api/v1/bookings')
+        .set('Authorization', `Bearer ${consumerToken}`)
+        .send({
+          listing_id: activeListingId,
+          scheduled_date: '2026-07-15',
+          scheduled_time: '10:00',
+          duration: 2
+        });
+      await query("UPDATE bookings SET status = 'confirmed' WHERE id = $1", [res.body.bookingId]);
+
+      // 2. Query availability for overlapping interval
+      const result = await availabilityService.checkAvailability(activeListingId, '2026-07-15', '11:00', 2);
+      expect(result.isAvailable).toBe(false);
+      expect(result.nextAvailableDate).toBe('2026-07-16');
+    });
+
+    it('should return isAvailable: false for blocked dates in listing_availability for equipment listings', async () => {
+      // 1. Insert blocked record in listing_availability
+      await query(
+        "INSERT INTO listing_availability (listing_id, date, is_available, blocked_reason) VALUES ($1, $2, false, 'Maintenance')",
+        [equipmentListingId, '2026-07-20']
+      );
+
+      // 2. Query availability for blocked date
+      const result = await availabilityService.checkAvailability(equipmentListingId, '2026-07-20', '10:00', 24);
+      expect(result.isAvailable).toBe(false);
+      expect(result.nextAvailableDate).toBe('2026-07-21');
+    });
+  });
+
+  describe('PUT /api/v1/bookings/:id/accept and /reject (US12)', () => {
+    let pendingBookingId;
+

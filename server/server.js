@@ -47,3 +47,6 @@ const userRoutes = require('./routes/user.routes');
 const listingRoutes = require('./routes/listing.routes');
 const bookingRoutes = require('./routes/booking.routes');
 const paymentRoutes = require('./routes/payment.routes');
+const reviewRoutes = require('./routes/review.routes');
+const searchRoutes = require('./routes/search.routes');
+const messagingRoutes = require('./routes/messaging.routes');
