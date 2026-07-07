@@ -187,3 +187,6 @@ const create = async (bookingData) => {
       notes || ''
     ];
 
+    const result = await client.query(sql, values);
+    const created = result.rows[0];
+
