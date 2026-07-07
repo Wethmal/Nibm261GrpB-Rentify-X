@@ -218,3 +218,25 @@ const accept = async (req, res, next) => {
         const providerRes = await query('SELECT full_name FROM users WHERE id = $1', [req.user.userId]);
         const providerName = providerRes.rows[0]?.full_name || 'The provider';
 
+        await notificationModel.create({
+          user_id: booking.consumer_id,
+          type: 'booking_accepted',
+          title: 'Booking Accepted',
+          body: `Your booking for "${listing?.title || 'a listing'}" on ${booking.scheduled_date} has been accepted by ${providerName}.`,
+          metadata: { bookingId: id }
+        });
+      } catch (err) {
+        console.error('Failed to send booking_accepted notification:', err);
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const reject = async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== 'provider') {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only providers can reject bookings' });
+    }
+

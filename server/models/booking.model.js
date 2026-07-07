@@ -174,3 +174,16 @@ const create = async (bookingData) => {
       RETURNING *
     `;
 
+    const values = [
+      consumer_id,
+      provider_id,
+      service_listing_id || null,
+      equipment_listing_id || null,
+      booking_type,
+      scheduled_date,
+      scheduled_time,
+      duration_hours,
+      total_price,
+      notes || ''
+    ];
+

@@ -20,3 +20,6 @@ router.post('/', authenticate, bookingController.create);
 router.get('/', authenticate, bookingController.getAll);
 
 // GET /api/v1/bookings/:id — Get booking by ID
+router.get('/:id', authenticate, bookingController.getById);
+
+// PUT /api/v1/bookings/:id/accept — Accept a booking request (provider)
