@@ -11,3 +11,22 @@ BEGIN
     END IF;
 END$$;
 
+CREATE TABLE IF NOT EXISTS bookings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    consumer_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    provider_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    
+    status booking_status_enum NOT NULL DEFAULT 'pending',
+    booking_type booking_type_enum NOT NULL,
+    
+    -- Nullable listing references to support single service, single equipment, or bundles
+    service_listing_id UUID REFERENCES listings(id) ON DELETE RESTRICT,
+    equipment_listing_id UUID REFERENCES listings(id) ON DELETE RESTRICT,
+    
+    scheduled_date DATE NOT NULL,
+    scheduled_time TIME NOT NULL,
+    duration_hours DECIMAL NOT NULL,
+    
+    total_price DECIMAL(10, 2) NOT NULL,
+    notes TEXT,
+    
