@@ -50,3 +50,6 @@ const paymentRoutes = require('./routes/payment.routes');
 const reviewRoutes = require('./routes/review.routes');
 const searchRoutes = require('./routes/search.routes');
 const messagingRoutes = require('./routes/messaging.routes');
+const notificationRoutes = require('./routes/notification.routes');
+const adminRoutes = require('./routes/admin.routes');
+const providerRoutes = require('./routes/provider.routes');
