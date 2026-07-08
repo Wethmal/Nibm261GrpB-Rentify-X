@@ -47,3 +47,8 @@ import ProviderProfilePage from './pages/consumer/ProviderProfilePage.jsx';
 // --- Provider Pages ---
 import ProviderDashboardPage from './pages/provider/ProviderDashboardPage.jsx';
 import CreateServiceListingPage from './pages/provider/CreateServiceListingPage.jsx';
+import CreateEquipmentListingPage from './pages/provider/CreateEquipmentListingPage.jsx';
+import AvailabilityCalendarPage from './pages/provider/AvailabilityCalendarPage.jsx';
+import BookingRequestsPage from './pages/provider/BookingRequestsPage.jsx';
+import ProviderEarningsPage from './pages/provider/ProviderEarningsPage.jsx';
+
