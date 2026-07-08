@@ -266,3 +266,25 @@ const reject = async (req, res, next) => {
         const providerRes = await query('SELECT full_name FROM users WHERE id = $1', [req.user.userId]);
         const providerName = providerRes.rows[0]?.full_name || 'The provider';
 
+        await notificationModel.create({
+          user_id: booking.consumer_id,
+          type: 'booking_rejected',
+          title: 'Booking Rejected',
+          body: `Your booking request for "${listing?.title || 'a listing'}" on ${booking.scheduled_date} has been declined by ${providerName}.`,
+          metadata: { bookingId: id }
+        });
+      } catch (err) {
+        console.error('Failed to send booking_rejected notification:', err);
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const cancel = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
+    }
+

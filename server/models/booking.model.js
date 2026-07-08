@@ -208,3 +208,11 @@ const create = async (bookingData) => {
   }
 };
 
+const updateStatus = async (id, status) => {
+  const result = await query(
+    'UPDATE bookings SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+    [status, id]
+  );
+  return result.rows[0];
+};
+
