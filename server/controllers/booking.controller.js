@@ -295,3 +295,11 @@ const cancel = async (req, res, next) => {
       return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
     }
 
+    if (booking.consumer_id !== req.user.userId && booking.provider_id !== req.user.userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'You can only cancel your own bookings' });
+    }
+
+    if (booking.status !== 'pending' && booking.status !== 'confirmed') {
+      return res.status(400).json({ error: 'Bad Request', message: 'Can only cancel pending or confirmed bookings' });
+    }
+

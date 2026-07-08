@@ -235,3 +235,4 @@ const checkAvailabilityConflict = async (listingId, date, time, durationHours) =
   return result.rowCount > 0;
 };
 
+module.exports = { findById, findByConsumer, findByProvider, create, updateStatus, checkAvailabilityConflict };
