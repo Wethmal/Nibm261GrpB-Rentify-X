@@ -255,3 +255,14 @@ const reject = async (req, res, next) => {
       return res.status(400).json({ error: 'Bad Request', message: 'Can only reject pending bookings' });
     }
 
+    const updatedBooking = await bookingModel.updateStatus(id, 'rejected');
+
+    res.status(200).json({ message: 'Booking rejected', booking: updatedBooking });
+
+    setImmediate(async () => {
+      try {
+        const listingId = booking.service_listing_id || booking.equipment_listing_id;
+        const listing = await listingModel.findById(listingId);
+        const providerRes = await query('SELECT full_name FROM users WHERE id = $1', [req.user.userId]);
+        const providerName = providerRes.rows[0]?.full_name || 'The provider';
+

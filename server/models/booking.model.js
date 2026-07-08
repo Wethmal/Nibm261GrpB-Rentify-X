@@ -198,3 +198,13 @@ const create = async (bookingData) => {
       );
     }
 
+    await client.query('COMMIT');
+    return created;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
