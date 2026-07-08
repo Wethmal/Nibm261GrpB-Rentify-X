@@ -216,3 +216,22 @@ const updateStatus = async (id, status) => {
   return result.rows[0];
 };
 
+const checkAvailabilityConflict = async (listingId, date, time, durationHours) => {
+  const sql = `
+    SELECT 1 FROM listing_availability
+    WHERE listing_id = $1 AND date = $2 AND is_available = false
+    UNION ALL
+    SELECT 1 FROM bookings
+    WHERE (service_listing_id = $1 OR equipment_listing_id = $1)
+      AND status = 'confirmed'
+      AND scheduled_date = $2
+      AND (
+        (scheduled_time, scheduled_time + (duration_hours || ' hours')::INTERVAL)
+        OVERLAPS
+        ($3::TIME, $3::TIME + ($4 || ' hours')::INTERVAL)
+      )
+  `;
+  const result = await query(sql, [listingId, date, time, durationHours]);
+  return result.rowCount > 0;
+};
+
