@@ -190,3 +190,11 @@ const create = async (bookingData) => {
     const result = await client.query(sql, values);
     const created = result.rows[0];
 
+    // Link every bundled equipment item to the booking, atomically with the booking row
+    for (const item of equipment_items) {
+      await client.query(
+        'INSERT INTO booking_equipment (booking_id, listing_id, price) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+        [created.id, item.id, item.price]
+      );
+    }
+
