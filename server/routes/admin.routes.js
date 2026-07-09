@@ -11,3 +11,6 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/admin.controller');
 const authenticate = require('../middleware/auth.middleware');
+const authorize = require('../middleware/role.middleware');
+
+// Apply auth + admin role to all admin routes

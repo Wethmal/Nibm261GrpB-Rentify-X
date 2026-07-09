@@ -203,3 +203,13 @@ const uploadNicDocument = async (req, res, next) => {
 
     await userModel.updateNicDocument(userId, secureUrl);
 
+    // Trigger admin notification (stub)
+    console.log(`[Admin Notification Stub] User ${userId} uploaded NIC document: ${secureUrl}`);
+
+    res.status(201).json({ url: secureUrl });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getProfile, updateProfile, getPublicProfile, getBookingHistory, uploadNicDocument, uploadAvatar };
