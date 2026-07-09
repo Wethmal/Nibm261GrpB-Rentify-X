@@ -185,3 +185,21 @@ const getBookingHistory = async (req, res, next) => {
   }
 };
 
+const uploadNicDocument = async (req, res, next) => {
+  try {
+    const userId = req.params.id;
+    if (userId !== req.user.userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You are not allowed to upload this NIC document' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // If Cloudinary was used, path is a URL. If diskStorage was used, generate a relative web URL.
+    const secureUrl = req.file.path && /^https?:\/\//i.test(req.file.path)
+      ? req.file.path
+      : `/uploads/nic/${req.file.filename}`;
+
+    await userModel.updateNicDocument(userId, secureUrl);
+
