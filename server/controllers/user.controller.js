@@ -147,3 +147,69 @@ const uploadAvatar = async (req, res, next) => {
       }
     }
 
+    await userModel.update(targetUserId, { profile_photo_url: secureUrl });
+
+    // Frontend logic uses .url from the response in some places, so return both or just avatar_url as required
+    res.status(200).json({ avatar_url: secureUrl, url: secureUrl });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getBookingHistory = async (req, res, next) => {
+  try {
+    const targetUserId = req.params.id;
+    const requestUserId = req.user.userId;
+    const requestUserRole = req.user.role;
+
+    if (targetUserId !== requestUserId && requestUserRole !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You are not allowed to view this booking history' });
+    }
+
+    const { page = 1, limit = 20 } = req.query;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const offset = (pageNum - 1) * limitNum;
+
+    const bookingModel = require('../models/booking.model');
+    const result = await bookingModel.findByConsumer(targetUserId, { limit: limitNum, offset });
+
+    res.status(200).json({
+      bookings: result.bookings,
+      totalCount: result.totalCount,
+      page: pageNum,
+      limit: limitNum
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const uploadNicDocument = async (req, res, next) => {
+  try {
+    const userId = req.params.id;
+    if (userId !== req.user.userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You are not allowed to upload this NIC document' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    // If Cloudinary was used, path is a URL. If diskStorage was used, generate a relative web URL.
+    const secureUrl = req.file.path && /^https?:\/\//i.test(req.file.path)
+      ? req.file.path
+      : `/uploads/nic/${req.file.filename}`;
+
+    await userModel.updateNicDocument(userId, secureUrl);
+
+    // Trigger admin notification (stub)
+    console.log(`[Admin Notification Stub] User ${userId} uploaded NIC document: ${secureUrl}`);
+
+    res.status(201).json({ url: secureUrl });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getProfile, updateProfile, getPublicProfile, getBookingHistory, uploadNicDocument, uploadAvatar };
