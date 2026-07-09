@@ -240,3 +240,66 @@ const reject = async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden', message: 'Only providers can reject bookings' });
     }
 
+    const { id } = req.params;
+    const booking = await bookingModel.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    }
+
+    if (booking.provider_id !== req.user.userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'You can only manage your own bookings' });
+    }
+
+    if (booking.status !== 'pending') {
+      return res.status(400).json({ error: 'Bad Request', message: 'Can only reject pending bookings' });
+    }
+
+    const updatedBooking = await bookingModel.updateStatus(id, 'rejected');
+
+    res.status(200).json({ message: 'Booking rejected', booking: updatedBooking });
+
+    setImmediate(async () => {
+      try {
+        const listingId = booking.service_listing_id || booking.equipment_listing_id;
+        const listing = await listingModel.findById(listingId);
+        const providerRes = await query('SELECT full_name FROM users WHERE id = $1', [req.user.userId]);
+        const providerName = providerRes.rows[0]?.full_name || 'The provider';
+
+        await notificationModel.create({
+          user_id: booking.consumer_id,
+          type: 'booking_rejected',
+          title: 'Booking Rejected',
+          body: `Your booking request for "${listing?.title || 'a listing'}" on ${booking.scheduled_date} has been declined by ${providerName}.`,
+          metadata: { bookingId: id }
+        });
+      } catch (err) {
+        console.error('Failed to send booking_rejected notification:', err);
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const cancel = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
+    }
+
+    const { id } = req.params;
+    const booking = await bookingModel.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    }
+
+    if (booking.consumer_id !== req.user.userId && booking.provider_id !== req.user.userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'You can only cancel your own bookings' });
+    }
+
+    if (booking.status !== 'pending' && booking.status !== 'confirmed') {
+      return res.status(400).json({ error: 'Bad Request', message: 'Can only cancel pending or confirmed bookings' });
+    }
+

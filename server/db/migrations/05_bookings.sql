@@ -30,3 +30,8 @@ CREATE TABLE IF NOT EXISTS bookings (
     total_price DECIMAL(10, 2) NOT NULL,
     notes TEXT,
     
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_bookings_consumer ON bookings(consumer_id);

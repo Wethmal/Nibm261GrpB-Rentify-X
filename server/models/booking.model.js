@@ -187,3 +187,52 @@ const create = async (bookingData) => {
       notes || ''
     ];
 
+    const result = await client.query(sql, values);
+    const created = result.rows[0];
+
+    // Link every bundled equipment item to the booking, atomically with the booking row
+    for (const item of equipment_items) {
+      await client.query(
+        'INSERT INTO booking_equipment (booking_id, listing_id, price) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+        [created.id, item.id, item.price]
+      );
+    }
+
+    await client.query('COMMIT');
+    return created;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+const updateStatus = async (id, status) => {
+  const result = await query(
+    'UPDATE bookings SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+    [status, id]
+  );
+  return result.rows[0];
+};
+
+const checkAvailabilityConflict = async (listingId, date, time, durationHours) => {
+  const sql = `
+    SELECT 1 FROM listing_availability
+    WHERE listing_id = $1 AND date = $2 AND is_available = false
+    UNION ALL
+    SELECT 1 FROM bookings
+    WHERE (service_listing_id = $1 OR equipment_listing_id = $1)
+      AND status = 'confirmed'
+      AND scheduled_date = $2
+      AND (
+        (scheduled_time, scheduled_time + (duration_hours || ' hours')::INTERVAL)
+        OVERLAPS
+        ($3::TIME, $3::TIME + ($4 || ' hours')::INTERVAL)
+      )
+  `;
+  const result = await query(sql, [listingId, date, time, durationHours]);
+  return result.rowCount > 0;
+};
+
+module.exports = { findById, findByConsumer, findByProvider, create, updateStatus, checkAvailabilityConflict };
