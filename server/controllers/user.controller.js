@@ -166,3 +166,22 @@ const getBookingHistory = async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden', message: 'You are not allowed to view this booking history' });
     }
 
+    const { page = 1, limit = 20 } = req.query;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const offset = (pageNum - 1) * limitNum;
+
+    const bookingModel = require('../models/booking.model');
+    const result = await bookingModel.findByConsumer(targetUserId, { limit: limitNum, offset });
+
+    res.status(200).json({
+      bookings: result.bookings,
+      totalCount: result.totalCount,
+      page: pageNum,
+      limit: limitNum
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
