@@ -52,3 +52,24 @@ const approveProvider = async (req, res, next) => {
   }
 };
 
+const rejectProvider = async (req, res, next) => {
+  try {
+    const reason = String(req.body.reason || '').trim();
+    if (!reason) return res.status(400).json({ error: 'Bad Request', message: 'A rejection reason is required' });
+    const user = await userModel.updateStatus(req.params.id, 'suspended', reason);
+    if (!user) return res.status(404).json({ error: 'Not Found', message: 'Provider not found' });
+    await notificationModel.create({
+      user_id: req.params.id,
+      type: 'provider_rejected',
+      title: 'Provider Verification Rejected',
+      body: reason,
+      metadata: { reason }
+    });
+    await audit.record(req.user.userId, 'provider_rejected', 'user', req.params.id, { reason });
+    notificationService.sendEmail(user.email, 'Your Rentify provider application', `<p>Unfortunately your application was rejected: ${reason}</p>`).catch(() => {});
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+

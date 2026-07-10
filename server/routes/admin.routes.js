@@ -24,3 +24,5 @@ router.put('/providers/:id/reject', adminController.rejectProvider);
 // --- NIC Verification ---
 router.get('/nic-verifications', adminController.getPendingNICVerifications);
 router.get('/nic-verifications/:id', adminController.getNICVerificationDetail);
+router.put('/nic-verifications/:id/decision', adminController.decideNICVerification);
+
