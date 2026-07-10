@@ -6,3 +6,4 @@
  * @author Rentify Engineering Team
  * @version 1.0.0
  */
+const request = require('supertest');

@@ -14,3 +14,15 @@ const authenticate = require('../middleware/auth.middleware');
 const authorize = require('../middleware/role.middleware');
 
 // Apply auth + admin role to all admin routes
+router.use(authenticate, authorize('admin'));
+
+// --- Provider Approvals ---
+router.get('/providers', adminController.getPendingProviders);
+router.put('/providers/:id/approve', adminController.approveProvider);
+router.put('/providers/:id/reject', adminController.rejectProvider);
+
+// --- NIC Verification ---
+router.get('/nic-verifications', adminController.getPendingNICVerifications);
+router.get('/nic-verifications/:id', adminController.getNICVerificationDetail);
+router.put('/nic-verifications/:id/decision', adminController.decideNICVerification);
+

@@ -53,3 +53,8 @@ const messagingRoutes = require('./routes/messaging.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const adminRoutes = require('./routes/admin.routes');
 const providerRoutes = require('./routes/provider.routes');
+const realtimeRoutes = require('./routes/realtime.routes');
+
+// --- Import Middleware ---
+const errorMiddleware = require('./middleware/error.middleware');
+
