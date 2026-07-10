@@ -52,3 +52,4 @@ import AvailabilityCalendarPage from './pages/provider/AvailabilityCalendarPage.
 import BookingRequestsPage from './pages/provider/BookingRequestsPage.jsx';
 import ProviderEarningsPage from './pages/provider/ProviderEarningsPage.jsx';
 
+// --- Admin Pages ---
