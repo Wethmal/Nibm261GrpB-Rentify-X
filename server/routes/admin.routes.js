@@ -21,3 +21,4 @@ router.get('/providers', adminController.getPendingProviders);
 router.put('/providers/:id/approve', adminController.approveProvider);
 router.put('/providers/:id/reject', adminController.rejectProvider);
 
+// --- NIC Verification ---
