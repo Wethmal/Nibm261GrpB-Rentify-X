@@ -31,3 +31,6 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_mobile ON users(mobile);
+CREATE INDEX idx_users_role_status ON users(role, status);
