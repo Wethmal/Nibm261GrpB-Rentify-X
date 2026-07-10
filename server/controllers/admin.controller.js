@@ -32,3 +32,23 @@ const getPendingProviders = async (req, res, next) => {
   }
 };
 
+const approveProvider = async (req, res, next) => {
+  try {
+    const user = await userModel.updateStatus(req.params.id, 'verified', null);
+    if (!user) return res.status(404).json({ error: 'Not Found', message: 'Provider not found' });
+    await notificationModel.create({
+      user_id: req.params.id,
+      type: 'provider_approved',
+      title: 'Provider Account Approved',
+      body: 'Your provider account has been approved. You can now publish listings.',
+      metadata: {}
+    });
+    await audit.record(req.user.userId, 'provider_approved', 'user', req.params.id, { note: req.body.reason || null });
+    notificationService.sendEmail(user.email, 'Your Rentify provider account was approved',
+      '<p>Your provider account has been approved. You can now publish listings.</p>').catch(() => {});
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
