@@ -14,3 +14,5 @@ const authenticate = require('../middleware/auth.middleware');
 const authorize = require('../middleware/role.middleware');
 
 // Apply auth + admin role to all admin routes
+router.use(authenticate, authorize('admin'));
+
