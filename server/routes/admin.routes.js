@@ -28,3 +28,6 @@ router.put('/nic-verifications/:id/decision', adminController.decideNICVerificat
 
 // --- Listing Moderation ---
 router.get('/listings', adminController.getListingsForModeration);
+router.put('/listings/:id/approve', adminController.approveListing);
+router.put('/listings/:id/suspend', adminController.suspendListing);
+

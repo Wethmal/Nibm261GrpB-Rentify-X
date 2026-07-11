@@ -40,3 +40,4 @@ function BarChart({ data = [], height = 160, color = '#2563eb', valueFormatter =
   );
 }
 
+export default BarChart;

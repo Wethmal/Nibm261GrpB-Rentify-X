@@ -78,3 +78,83 @@ function AdminDashboardPage() {
           </div>
         </div>
 
+        <div className="kpi-card">
+          <div className="kpi-icon blue"><CheckCircle /></div>
+          <div className="kpi-info">
+            <h3>Active Users</h3>
+            <p className="kpi-value">{stats?.activeUsers ?? 0}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="action-card" style={{ marginBottom: '1.5rem' }}>
+        <div className="action-header">
+          <h3><BarChart2 className="icon-info" /> Bookings - last 30 days</h3>
+        </div>
+        <BarChart
+          height={190}
+          showEvery={5}
+          data={(stats?.bookingsLast30Days || []).map((d) => ({ label: d.day.slice(5), value: d.bookings }))}
+          valueFormatter={(v) => `${v} booking${v === 1 ? '' : 's'}`}
+          ariaLabel="Bookings created per day over the last 30 days"
+        />
+      </div>
+
+      <div className="action-grid">
+        <div className="action-card">
+          <div className="action-header">
+            <h3><AlertTriangle className="icon-warning" /> Pending Approvals</h3>
+          </div>
+          <div className="action-stats">
+            <div className="stat-item">
+              <span>Pending Providers</span>
+              <strong>{stats?.pendingProviders || 0}</strong>
+            </div>
+            <div className="stat-item">
+              <span>Pending Listings</span>
+              <strong>{stats?.pendingListings || 0}</strong>
+            </div>
+          </div>
+          <div className="action-links">
+            <Link to="/admin/provider-approvals" className="btn-action">
+              Review Providers <ArrowRight size={16}/>
+            </Link>
+            <Link to="/admin/listing-moderation" className="btn-action">
+              Review Listings <ArrowRight size={16}/>
+            </Link>
+          </div>
+        </div>
+
+        <div className="action-card">
+          <div className="action-header">
+            <h3><BarChart2 className="icon-info" /> Platform Data</h3>
+          </div>
+          <div className="action-stats breakdown-stats">
+             {stats?.usersByRole?.map((role) => (
+                <div key={role.role} className="stat-item">
+                  <span style={{textTransform: 'capitalize'}}>{role.role}s</span>
+                  <strong>{role.count}</strong>
+                </div>
+             ))}
+          </div>
+          <div className="action-links">
+            <Link to="/admin/users" className="btn-action">
+              Manage Users <ArrowRight size={16}/>
+            </Link>
+            <Link to="/admin/categories" className="btn-action">
+              Manage Categories <ArrowRight size={16}/>
+            </Link>
+            <Link to="/admin/reports" className="btn-action">
+              Reported Users <ArrowRight size={16}/>
+            </Link>
+            <Link to="/admin/nic-verification" className="btn-action">
+              NIC Verification <ArrowRight size={16}/>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default AdminDashboardPage;

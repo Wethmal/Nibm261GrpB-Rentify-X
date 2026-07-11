@@ -101,3 +101,20 @@ const getListingsForModeration = async (req, res, next) => {
   }
 };
 
+const approveListing = async (req, res, next) => {
+  try {
+    const listing = await listingModel.updateStatus(req.params.id, 'active');
+    if (!listing) return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
+    await notificationModel.create({
+      user_id: listing.provider_id,
+      type: 'listing_approved',
+      title: 'Listing Approved',
+      body: `"${listing.title}" is now live in search.`,
+      metadata: { listingId: listing.id }
+    });
+    res.status(200).json(listing);
+  } catch (error) {
+    next(error);
+  }
+};
+
