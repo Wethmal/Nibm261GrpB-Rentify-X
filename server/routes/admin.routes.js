@@ -26,3 +26,9 @@ router.get('/nic-verifications', adminController.getPendingNICVerifications);
 router.get('/nic-verifications/:id', adminController.getNICVerificationDetail);
 router.put('/nic-verifications/:id/decision', adminController.decideNICVerification);
 
+// --- Listing Moderation ---
+router.get('/listings', adminController.getListingsForModeration);
+router.put('/listings/:id/approve', adminController.approveListing);
+router.put('/listings/:id/suspend', adminController.suspendListing);
+
+// --- User Management ---
