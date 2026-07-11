@@ -58,3 +58,7 @@ const realtimeRoutes = require('./routes/realtime.routes');
 // --- Import Middleware ---
 const errorMiddleware = require('./middleware/error.middleware');
 
+// --- Initialize Express App ---
+const app = express();
+
+// --- Global Middleware ---

@@ -73,3 +73,48 @@ const rejectProvider = async (req, res, next) => {
   }
 };
 
+const getPendingNICVerifications = async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, email, mobile, full_name, role, status, nic_number, nic_document_url, created_at
+       FROM users
+       WHERE nic_document_url IS NOT NULL
+         AND status = 'pending_verification'
+         AND is_deleted = false
+       ORDER BY created_at ASC`
+    );
+    res.status(200).json({ verifications: rows });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getListingsForModeration = async (req, res, next) => {
+  try {
+    const status = req.query.status || 'pending_approval';
+    const type = req.query.type || '';
+    const { page, limit, offset } = parsePagination(req);
+    const { results, total } = await listingModel.findAll({ status, type }, { limit, offset });
+    res.status(200).json({ listings: results, results, total, page, limit });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const approveListing = async (req, res, next) => {
+  try {
+    const listing = await listingModel.updateStatus(req.params.id, 'active');
+    if (!listing) return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
+    await notificationModel.create({
+      user_id: listing.provider_id,
+      type: 'listing_approved',
+      title: 'Listing Approved',
+      body: `"${listing.title}" is now live in search.`,
+      metadata: { listingId: listing.id }
+    });
+    res.status(200).json(listing);
+  } catch (error) {
+    next(error);
+  }
+};
+

@@ -35,3 +35,5 @@ CREATE TABLE IF NOT EXISTS bookings (
 );
 
 CREATE INDEX IF NOT EXISTS idx_bookings_consumer ON bookings(consumer_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_service_listing ON bookings(service_listing_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
