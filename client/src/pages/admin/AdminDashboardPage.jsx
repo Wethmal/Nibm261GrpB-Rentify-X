@@ -36,3 +36,45 @@ function AdminDashboardPage() {
   const totalListings = stats?.listingsByType?.reduce((acc, curr) => acc + Number(curr.count), 0) || 0;
   const totalBookings = stats?.bookingsByStatus?.reduce((acc, curr) => acc + Number(curr.count), 0) || 0;
 
+  return (
+    <div className="admin-dashboard-page">
+      <div className="dashboard-header">
+        <div>
+          <h1>Admin Dashboard</h1>
+          <p>Platform analytics, revenue, and key performance indicators.</p>
+        </div>
+      </div>
+
+      <div className="kpi-grid">
+        <div className="kpi-card">
+          <div className="kpi-icon blue"><Users /></div>
+          <div className="kpi-info">
+            <h3>Total Users</h3>
+            <p className="kpi-value">{totalUsers}</p>
+          </div>
+        </div>
+        
+        <div className="kpi-card">
+          <div className="kpi-icon green"><ShoppingBag /></div>
+          <div className="kpi-info">
+            <h3>Total Listings</h3>
+            <p className="kpi-value">{totalListings}</p>
+          </div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-icon purple"><Activity /></div>
+          <div className="kpi-info">
+            <h3>Total Bookings</h3>
+            <p className="kpi-value">{totalBookings}</p>
+          </div>
+        </div>
+
+        <div className="kpi-card">
+          <div className="kpi-icon gold"><DollarSign /></div>
+          <div className="kpi-info">
+            <h3>Total Revenue</h3>
+            <p className="kpi-value">Rs. {Number(stats?.totalRevenue || 0).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          </div>
+        </div>
+
