@@ -150,3 +150,27 @@ const getUsers = async (req, res, next) => {
     const where = ['is_deleted = false'];
     const values = [];
 
+    if (role) {
+      values.push(role);
+      where.push(`role = $${values.length}`);
+    }
+    if (status) {
+      values.push(status);
+      where.push(`status = $${values.length}`);
+    }
+    if (search) {
+      values.push(`%${search}%`);
+      where.push(`(full_name ILIKE $${values.length} OR email ILIKE $${values.length} OR mobile ILIKE $${values.length})`);
+    }
+
+    const whereClause = where.join(' AND ');
+    const count = await query(`SELECT COUNT(*) FROM users WHERE ${whereClause}`, values);
+    const { rows } = await query(
+      `SELECT id, email, mobile, role, status, status_reason, suspended_until, full_name, trust_score, created_at
+       FROM users
+       WHERE ${whereClause}
+       ORDER BY created_at DESC
+       LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+      [...values, limit, offset]
+    );
+

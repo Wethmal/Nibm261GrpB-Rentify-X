@@ -47,3 +47,17 @@ const create = async (categoryData) => {
   return rows[0];
 };
 
+const update = async (id, updateData) => {
+  const allowedFields = ['name', 'type', 'parent_id', 'is_active'];
+  const fields = [];
+  const values = [];
+
+  for (const [key, value] of Object.entries(updateData)) {
+    if (allowedFields.includes(key)) {
+      values.push(value === '' ? null : value);
+      fields.push(`${key} = $${values.length}`);
+    }
+  }
+
+  if (fields.length === 0) return null;
+
