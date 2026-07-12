@@ -35,3 +35,6 @@ router.put('/listings/:id/suspend', adminController.suspendListing);
 router.get('/users', adminController.getUsers);
 router.get('/users/:id', adminController.getUserDetail);
 router.put('/users/:id/ban', adminController.banUser);
+router.put('/users/:id/suspend', adminController.suspendUser);
+router.put('/users/:id/reinstate', adminController.reinstateUser);
+

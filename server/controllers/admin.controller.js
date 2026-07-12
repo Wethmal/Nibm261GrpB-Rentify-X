@@ -174,3 +174,9 @@ const getUsers = async (req, res, next) => {
       [...values, limit, offset]
     );
 
+    res.status(200).json({ users: rows, total: Number(count.rows[0].count), page, limit });
+  } catch (error) {
+    next(error);
+  }
+};
+

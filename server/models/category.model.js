@@ -61,3 +61,22 @@ const update = async (id, updateData) => {
 
   if (fields.length === 0) return null;
 
+  values.push(id);
+  const { rows } = await query(
+    `UPDATE categories SET ${fields.join(', ')}, updated_at = NOW()
+     WHERE id = $${values.length}
+     RETURNING *`,
+    values
+  );
+  return rows[0] || null;
+};
+
+const softDelete = async (id) => {
+  const { rows } = await query(
+    'UPDATE categories SET is_active = false, updated_at = NOW() WHERE id = $1 RETURNING *',
+    [id]
+  );
+  return rows[0] || null;
+};
+
+module.exports = { findAll, findByType, findById, create, update, softDelete };
