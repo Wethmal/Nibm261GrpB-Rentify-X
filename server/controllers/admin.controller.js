@@ -141,3 +141,12 @@ const suspendListing = async (req, res, next) => {
   }
 };
 
+const getUsers = async (req, res, next) => {
+  try {
+    const { page, limit, offset } = parsePagination(req);
+    const role = req.query.role || '';
+    const status = req.query.status || '';
+    const search = req.query.q || req.query.search || '';
+    const where = ['is_deleted = false'];
+    const values = [];
+

@@ -23,3 +23,27 @@ const findAll = async (includeInactive = false) => {
   return rows;
 };
 
+const findByType = async (type) => {
+  const { rows } = await query(
+    'SELECT * FROM categories WHERE type = $1 AND is_active = true ORDER BY name ASC',
+    [type]
+  );
+  return rows;
+};
+
+const findById = async (id) => {
+  const result = await query('SELECT * FROM categories WHERE id = $1', [id]);
+  return result.rows[0] || null;
+};
+
+const create = async (categoryData) => {
+  const { name, type, parent_id = null, is_active = true } = categoryData;
+  const { rows } = await query(
+    `INSERT INTO categories (name, type, parent_id, is_active)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [name, type, parent_id || null, is_active]
+  );
+  return rows[0];
+};
+
