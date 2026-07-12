@@ -205,3 +205,233 @@ const create = async (req, res, next) => {
         // 1. Log to admin moderation queue
         console.log(`[Admin Moderation Queue] Listing pending approval: ${listing.id}`);
 
+        // 2. Fetch all admin users
+        const admins = await userModel.findAdmins();
+
+        // 3. Create a notification record for each admin user
+        for (const admin of admins) {
+          await notificationModel.create({
+            user_id: admin.id,
+            type: 'listing_pending_review',
+            title: 'New Listing Pending Review',
+            body: `A new service listing "${listing.title}" is pending approval.`,
+            metadata: { listingId: listing.id }
+          });
+        }
+      } catch (err) {
+        console.error('Error in admin notification trigger:', err);
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const update = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
+    }
+
+    const { id } = req.params;
+    const listing = await listingModel.findById(id);
+
+    if (!listing) {
+      return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
+    }
+
+    if (listing.provider_id !== req.user.userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You do not own this listing' });
+    }
+
+    const updatePayload = { ...req.body };
+    if (updatePayload.district && (!updatePayload.geo_lat || !updatePayload.geo_lng)) {
+      const coords = DISTRICT_COORDINATES[updatePayload.district];
+      if (coords) {
+        updatePayload.geo_lat = updatePayload.geo_lat || coords.lat;
+        updatePayload.geo_lng = updatePayload.geo_lng || coords.lng;
+      }
+    }
+
+    const updatedListing = await listingModel.update(id, updatePayload);
+    res.status(200).json({ message: 'Listing updated successfully', listing: updatedListing });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const remove = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
+    }
+
+    const { id } = req.params;
+    const listing = await listingModel.findById(id);
+
+    if (!listing) {
+      return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
+    }
+
+    if (listing.provider_id !== req.user.userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You do not own this listing' });
+    }
+
+    await listingModel.softDelete(id);
+
+    const { query } = require('../config/db');
+    await query(
+      "UPDATE bookings SET status = 'cancelled' WHERE (service_listing_id = $1 OR equipment_listing_id = $1) AND status = 'pending'",
+      [id]
+    );
+
+    res.status(200).json({ message: 'Listing deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getAvailability = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { query } = require('../config/db');
+
+    // Fetch availability records
+    const result = await query(
+      'SELECT date, is_available, blocked_reason FROM listing_availability WHERE listing_id = $1 ORDER BY date ASC',
+      [id]
+    );
+
+    // Also fetch confirmed bookings for this listing to show as locked slots
+    const bookingsResult = await query(
+      `SELECT scheduled_date, scheduled_time, duration_hours, status 
+       FROM bookings 
+       WHERE (equipment_listing_id = $1 OR service_listing_id = $1)
+       AND status = 'confirmed'`,
+      [id]
+    );
+
+    res.status(200).json({
+      availability: result.rows,
+      bookings: bookingsResult.rows
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateAvailability = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { dates } = req.body; // Expects array: [{ date: 'YYYY-MM-DD', isAvailable: boolean, blockedReason: string }]
+    const { query, getClient } = require('../config/db');
+
+    // Verify ownership
+    const listing = await listingModel.findById(id);
+    if (!listing) {
+      return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
+    }
+
+    if (listing.provider_id !== req.user.userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You do not own this listing' });
+    }
+
+    if (!Array.isArray(dates)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'dates array is required' });
+    }
+
+    const client = await getClient();
+    try {
+      await client.query('BEGIN');
+
+      for (const d of dates) {
+        // Prevent blocking a date if there is already a confirmed booking
+        if (!d.isAvailable) {
+          const conflictRes = await client.query(
+            `SELECT 1 FROM bookings 
+             WHERE (equipment_listing_id = $1 OR service_listing_id = $1)
+             AND scheduled_date = $2 AND status = 'confirmed'`,
+            [id, d.date]
+          );
+          if (conflictRes.rowCount > 0) {
+            throw new Error(`Cannot block ${d.date} because there is a confirmed booking on this date.`);
+          }
+        }
+
+        await client.query(
+          `INSERT INTO listing_availability (listing_id, date, is_available, blocked_reason)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (listing_id, date)
+           DO UPDATE SET is_available = EXCLUDED.is_available, blocked_reason = EXCLUDED.blocked_reason, updated_at = NOW()`,
+          [id, d.date, d.isAvailable, d.blockedReason || null]
+        );
+      }
+
+      await client.query('COMMIT');
+      res.status(200).json({ message: 'Availability updated successfully' });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      if (err.message.includes('Cannot block')) {
+        return res.status(409).json({ error: 'Conflict', message: err.message });
+      }
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+const uploadPhotos = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Check if listing exists
+    const listing = await listingModel.findById(id);
+    if (!listing) {
+      return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
+    }
+
+    // Verify ownership: provider_id set from JWT matches, or user is admin
+    const currentUserId = req.user.userId || req.user.id;
+    if (listing.provider_id !== currentUserId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You do not own this listing' });
+    }
+
+    // Check files presence
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'Bad Request', message: 'No photos uploaded' });
+    }
+
+    // Rejects >10 files with 422
+    if (req.files.length > 10) {
+      return res.status(422).json({ error: 'Unprocessable Entity', message: 'Cannot upload more than 10 photos' });
+    }
+
+    // Extract URLs from multer (supports Cloudinary or local disk storage)
+    const photoUrls = req.files.map(file => {
+      const url = file.path || file.secure_url;
+      if (url && /^https?:\/\//i.test(url)) {
+        return url;
+      }
+      return `/uploads/listings/${file.filename}`;
+    });
+
+    // Update listings.photos JSONB array in DB atomically
+    const currentPhotos = Array.isArray(listing.photos) ? listing.photos : [];
+    const updatedPhotos = [...currentPhotos, ...photoUrls];
+
+    await listingModel.updatePhotos(id, updatedPhotos);
+
+    return res.status(200).json({
+      message: 'Photos uploaded successfully',
+      urls: photoUrls,
+      photos: updatedPhotos
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getAll, getById, create, update, remove, getAvailability, updateAvailability, uploadPhotos };

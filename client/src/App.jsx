@@ -38,3 +38,22 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 
 // --- Consumer Pages ---
 import HomePage from './pages/consumer/HomePage.jsx';
+import SearchPage from './pages/consumer/SearchPage.jsx';
+import ListingDetailPage from './pages/consumer/ListingDetailPage.jsx';
+import BookingHistoryPage from './pages/consumer/BookingHistoryPage.jsx';
+import BundleBookingPage from './pages/consumer/BundleBookingPage.jsx';
+import ProviderProfilePage from './pages/consumer/ProviderProfilePage.jsx';
+
+// --- Provider Pages ---
+import ProviderDashboardPage from './pages/provider/ProviderDashboardPage.jsx';
+import CreateServiceListingPage from './pages/provider/CreateServiceListingPage.jsx';
+import CreateEquipmentListingPage from './pages/provider/CreateEquipmentListingPage.jsx';
+import AvailabilityCalendarPage from './pages/provider/AvailabilityCalendarPage.jsx';
+import BookingRequestsPage from './pages/provider/BookingRequestsPage.jsx';
+import ProviderEarningsPage from './pages/provider/ProviderEarningsPage.jsx';
+
+// --- Admin Pages ---
+import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
+import ProviderApprovalPage from './pages/admin/ProviderApprovalPage.jsx';
+import NICVerificationPage from './pages/admin/NICVerificationPage.jsx';
+import ListingModerationPage from './pages/admin/ListingModerationPage.jsx';

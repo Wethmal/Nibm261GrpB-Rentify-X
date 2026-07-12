@@ -52,3 +52,53 @@ const checkAvailability = async (listingId, date, time, durationHours) => {
     return { isAvailable: false, nextAvailableDate: nextDate };
   }
 
+  return { isAvailable: true };
+};
+
+/**
+ * Helper to scan forward for the next available date.
+ */
+const findNextAvailableDate = async (listing, startDate, time, durationHours) => {
+  let currentDate = new Date(startDate);
+  let attempts = 0;
+  
+  while (attempts < 30) {
+    currentDate.setDate(currentDate.getDate() + 1);
+    const dateStr = currentDate.toISOString().split('T')[0];
+    
+    // Check listing_availability if equipment
+    let isBlocked = false;
+    if (listing.type === 'equipment') {
+      const availRes = await query(
+        'SELECT is_available FROM listing_availability WHERE listing_id = $1 AND date = $2',
+        [listing.id, dateStr]
+      );
+      if (availRes.rowCount > 0 && availRes.rows[0].is_available === false) {
+        isBlocked = true;
+      }
+    }
+    
+    if (!isBlocked) {
+      // Check bookings overlap
+      const conflictSql = `
+        SELECT 1 FROM bookings
+        WHERE (service_listing_id = $1 OR equipment_listing_id = $1)
+          AND status = 'confirmed'
+          AND scheduled_date = $2
+          AND (
+            (scheduled_time, scheduled_time + (duration_hours || ' hours')::INTERVAL)
+            OVERLAPS
+            ($3::TIME, $3::TIME + ($4 || ' hours')::INTERVAL)
+          )
+      `;
+      const bookingsRes = await query(conflictSql, [listing.id, dateStr, time, durationHours]);
+      if (bookingsRes.rowCount === 0) {
+        return dateStr;
+      }
+    }
+    attempts++;
+  }
+  return null;
+};
+
+module.exports = { checkAvailability };

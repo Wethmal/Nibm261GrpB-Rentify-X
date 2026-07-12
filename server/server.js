@@ -45,3 +45,25 @@ const path = require('path');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const listingRoutes = require('./routes/listing.routes');
+const bookingRoutes = require('./routes/booking.routes');
+const paymentRoutes = require('./routes/payment.routes');
+const reviewRoutes = require('./routes/review.routes');
+const searchRoutes = require('./routes/search.routes');
+const messagingRoutes = require('./routes/messaging.routes');
+const notificationRoutes = require('./routes/notification.routes');
+const adminRoutes = require('./routes/admin.routes');
+const providerRoutes = require('./routes/provider.routes');
+const realtimeRoutes = require('./routes/realtime.routes');
+
+// --- Import Middleware ---
+const errorMiddleware = require('./middleware/error.middleware');
+
+// --- Initialize Express App ---
+const app = express();
+
+// --- Global Middleware ---
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173').split(',').map(o => o.trim());
+

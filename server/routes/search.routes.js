@@ -12,3 +12,12 @@ const router = express.Router();
 const searchController = require('../controllers/search.controller');
 
 // GET /api/v1/search — Search listings with filters (q, category, district, type, priceMin, priceMax, rating, sort, page, limit)
+router.get('/', searchController.search);
+
+// GET /api/v1/search/categories — Get all active categories for search filters
+router.get('/categories', searchController.getCategories);
+
+// GET /api/v1/search/nearby — Geo-based search for nearby listings
+router.get('/nearby', searchController.searchNearby);
+
+module.exports = router;

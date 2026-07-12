@@ -187,3 +187,82 @@ const findAll = async (filters = {}, pagination = {}) => {
   const { provider_id, category_id, type, status = 'active', q, district, min_price, max_price } = filters;
   const { limit = 20, offset = 0 } = pagination;
 
+  const whereParts = [];
+  const values = [];
+
+  if (status !== 'all') {
+    values.push(status);
+    whereParts.push(`l.status = $${values.length}`);
+  } else {
+    whereParts.push("l.status != 'deleted'");
+  }
+
+  if (provider_id) {
+    values.push(provider_id);
+    whereParts.push(`l.provider_id = $${values.length}`);
+  }
+
+  if (category_id) {
+    values.push(category_id);
+    whereParts.push(`l.category_id = $${values.length}`);
+  }
+
+  if (type) {
+    values.push(type);
+    whereParts.push(`l.type = $${values.length}`);
+  }
+
+  if (district) {
+    values.push(district);
+    whereParts.push(`l.district ILIKE $${values.length}`);
+  }
+
+  if (min_price !== undefined && min_price !== '' && !Number.isNaN(Number(min_price))) {
+    values.push(Number(min_price));
+    whereParts.push(`l.price_per_unit >= $${values.length}`);
+  }
+
+  if (max_price !== undefined && max_price !== '' && !Number.isNaN(Number(max_price))) {
+    values.push(Number(max_price));
+    whereParts.push(`l.price_per_unit <= $${values.length}`);
+  }
+
+  if (q) {
+    values.push(`%${q}%`);
+    whereParts.push(`(l.title ILIKE $${values.length} OR l.description ILIKE $${values.length})`);
+  }
+
+  const whereClause = whereParts.length > 0 ? 'WHERE ' + whereParts.join(' AND ') : '';
+
+  const countSql = `SELECT COUNT(*) FROM listings l ${whereClause}`;
+  const countRes = await query(countSql, values);
+  const total = parseInt(countRes.rows[0].count, 10);
+
+  const fetchSql = `
+    SELECT l.*,
+           c.name AS category_name,
+           u.full_name AS provider_name,
+           u.email AS provider_email,
+           u.mobile AS provider_mobile,
+           u.profile_photo_url AS provider_avatar,
+           u.trust_score AS provider_trust_score
+    FROM listings l
+    LEFT JOIN categories c ON l.category_id = c.id
+    LEFT JOIN users u ON l.provider_id = u.id
+    ${whereClause}
+    ORDER BY l.created_at DESC
+    LIMIT $${values.length + 1} OFFSET $${values.length + 2}
+  `;
+
+  const fetchValues = [...values, limit, offset];
+  const { rows } = await query(fetchSql, fetchValues);
+
+  return { results: rows, total };
+};
+
+const updatePhotos = async (id, photos) => {
+  const result = await query('UPDATE listings SET photos = $1 WHERE id = $2 RETURNING *', [JSON.stringify(photos), id]);
+  return result.rows[0];
+};
+
+module.exports = { findById, search, findAll, create, update, updateStatus, softDelete, getAvailability, upsertAvailability, updatePhotos };

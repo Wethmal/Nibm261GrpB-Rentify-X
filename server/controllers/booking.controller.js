@@ -39,3 +39,267 @@ const create = async (req, res, next) => {
       return res.status(404).json({ error: 'Not Found', message: 'Listing not found or inactive' });
     }
 
+    let total_price = Number(listing.price_per_unit) * duration;
+    const equipmentItems = [];
+
+    for (const eid of equipmentIds) {
+      const eq = await listingModel.findById(eid);
+      if (!eq || eq.status !== 'active') {
+        return res.status(404).json({ error: 'Not Found', message: 'Equipment listing not found or inactive' });
+      }
+      if (eq.provider_id !== listing.provider_id) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'Bundled service and equipment must belong to the same provider'
+        });
+      }
+      const price = Number(eq.price_per_unit) * duration;
+      total_price += price;
+      equipmentItems.push({ id: eq.id, price });
+    }
+
+    // 3. Create booking inside model using SELECT FOR UPDATE lock to prevent race conditions
+    let booking;
+    try {
+      booking = await bookingModel.create({
+        consumer_id: req.user.userId,
+        provider_id: listing.provider_id,
+        service_listing_id: listing.type === 'service' ? listing.id : null,
+        equipment_listing_id: equipmentItems.length ? equipmentItems[0].id : (listing.type === 'equipment' ? listing.id : null),
+        equipment_items: equipmentItems,
+        booking_type: equipmentItems.length ? 'bundle' : listing.type,
+        scheduled_date,
+        scheduled_time,
+        duration_hours: duration,
+        total_price,
+        notes
+      });
+    } catch (err) {
+      if (err.message === 'AvailabilityConflict') {
+        return res.status(409).json({ error: 'Conflict', message: 'Listing is already booked for this slot' });
+      }
+      throw err;
+    }
+
+    // 4. Send HTTP response first (non-blocking)
+    res.status(201).json({
+      message: 'Booking request sent successfully',
+      bookingId: booking.id,
+      booking
+    });
+
+    // 5. Fire notification to provider asynchronously (non-blocking)
+    setImmediate(async () => {
+      try {
+        const consumerRes = await query('SELECT full_name FROM users WHERE id = $1', [req.user.userId]);
+        const consumerName = consumerRes.rows[0]?.full_name || 'A consumer';
+
+        await notificationModel.create({
+          user_id: listing.provider_id,
+          type: 'new_booking_request',
+          title: 'New Booking Request',
+          body: `You received a new booking request for "${listing.title}".`,
+          metadata: {
+            bookingId: booking.id,
+            consumerName,
+            scheduledDate: scheduled_date
+          }
+        });
+      } catch (notifErr) {
+        console.error('Asynchronous notification creation failed:', notifErr);
+      }
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getAll = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
+    }
+
+    const { page = 1, limit = 20, upcoming } = req.query;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const offset = (pageNum - 1) * limitNum;
+    const isUpcoming = upcoming === 'true';
+
+    let result = { bookings: [], totalCount: 0 };
+    if (req.user.role === 'consumer') {
+      result = await bookingModel.findByConsumer(req.user.userId, { limit: limitNum, offset });
+    } else if (req.user.role === 'provider') {
+      result = await bookingModel.findByProvider(req.user.userId, { limit: limitNum, offset, upcoming: isUpcoming });
+    }
+
+    res.status(200).json({
+      bookings: result.bookings,
+      totalCount: result.totalCount,
+      page: pageNum,
+      limit: limitNum
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getById = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
+    }
+
+    const { id } = req.params;
+    const booking = await bookingModel.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    }
+
+    if (booking.consumer_id !== req.user.userId && booking.provider_id !== req.user.userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'You are not authorized to view this booking' });
+    }
+
+    const eq = await query(
+      `SELECT be.listing_id, be.price, l.title FROM booking_equipment be
+       JOIN listings l ON l.id = be.listing_id WHERE be.booking_id = $1`, [id]
+    ).catch(() => ({ rows: [] }));
+    res.status(200).json({ ...booking, equipment_items: eq.rows });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const accept = async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== 'provider') {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only providers can accept bookings' });
+    }
+
+    const { id } = req.params;
+    const booking = await bookingModel.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    }
+
+    if (booking.provider_id !== req.user.userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'You can only manage your own bookings' });
+    }
+
+    if (booking.status !== 'pending') {
+      return res.status(400).json({ error: 'Bad Request', message: 'Can only accept pending bookings' });
+    }
+
+    const listingIds = [booking.service_listing_id, booking.equipment_listing_id].filter(Boolean);
+    for (const listingId of listingIds) {
+      const hasConflict = await bookingModel.checkAvailabilityConflict(
+        listingId,
+        booking.scheduled_date,
+        booking.scheduled_time,
+        booking.duration_hours
+      );
+
+      if (hasConflict) {
+        return res.status(409).json({ error: 'Conflict', message: 'This slot is already confirmed or blocked' });
+      }
+    }
+
+    const updatedBooking = await bookingModel.updateStatus(id, 'confirmed');
+
+    res.status(200).json({ message: 'Booking accepted', booking: updatedBooking });
+
+    setImmediate(async () => {
+      try {
+        const listingId = booking.service_listing_id || booking.equipment_listing_id;
+        const listing = await listingModel.findById(listingId);
+        const providerRes = await query('SELECT full_name FROM users WHERE id = $1', [req.user.userId]);
+        const providerName = providerRes.rows[0]?.full_name || 'The provider';
+
+        await notificationModel.create({
+          user_id: booking.consumer_id,
+          type: 'booking_accepted',
+          title: 'Booking Accepted',
+          body: `Your booking for "${listing?.title || 'a listing'}" on ${booking.scheduled_date} has been accepted by ${providerName}.`,
+          metadata: { bookingId: id }
+        });
+      } catch (err) {
+        console.error('Failed to send booking_accepted notification:', err);
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const reject = async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== 'provider') {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only providers can reject bookings' });
+    }
+
+    const { id } = req.params;
+    const booking = await bookingModel.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    }
+
+    if (booking.provider_id !== req.user.userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'You can only manage your own bookings' });
+    }
+
+    if (booking.status !== 'pending') {
+      return res.status(400).json({ error: 'Bad Request', message: 'Can only reject pending bookings' });
+    }
+
+    const updatedBooking = await bookingModel.updateStatus(id, 'rejected');
+
+    res.status(200).json({ message: 'Booking rejected', booking: updatedBooking });
+
+    setImmediate(async () => {
+      try {
+        const listingId = booking.service_listing_id || booking.equipment_listing_id;
+        const listing = await listingModel.findById(listingId);
+        const providerRes = await query('SELECT full_name FROM users WHERE id = $1', [req.user.userId]);
+        const providerName = providerRes.rows[0]?.full_name || 'The provider';
+
+        await notificationModel.create({
+          user_id: booking.consumer_id,
+          type: 'booking_rejected',
+          title: 'Booking Rejected',
+          body: `Your booking request for "${listing?.title || 'a listing'}" on ${booking.scheduled_date} has been declined by ${providerName}.`,
+          metadata: { bookingId: id }
+        });
+      } catch (err) {
+        console.error('Failed to send booking_rejected notification:', err);
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const cancel = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
+    }
+
+    const { id } = req.params;
+    const booking = await bookingModel.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    }
+
+    if (booking.consumer_id !== req.user.userId && booking.provider_id !== req.user.userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'You can only cancel your own bookings' });
+    }
+
+    if (booking.status !== 'pending' && booking.status !== 'confirmed') {
+      return res.status(400).json({ error: 'Bad Request', message: 'Can only cancel pending or confirmed bookings' });
+    }
+
