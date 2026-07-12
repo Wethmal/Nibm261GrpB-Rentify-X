@@ -31,3 +31,10 @@ router.get('/listings', adminController.getListingsForModeration);
 router.put('/listings/:id/approve', adminController.approveListing);
 router.put('/listings/:id/suspend', adminController.suspendListing);
 
+// --- User Management ---
+router.get('/users', adminController.getUsers);
+router.get('/users/:id', adminController.getUserDetail);
+router.put('/users/:id/ban', adminController.banUser);
+router.put('/users/:id/suspend', adminController.suspendUser);
+router.put('/users/:id/reinstate', adminController.reinstateUser);
+

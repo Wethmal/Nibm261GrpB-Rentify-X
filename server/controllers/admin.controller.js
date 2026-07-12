@@ -118,3 +118,65 @@ const approveListing = async (req, res, next) => {
   }
 };
 
+const suspendListing = async (req, res, next) => {
+  try {
+    const reason = String(req.body.reason || '').trim();
+    if (reason.length < 5) {
+      return res.status(400).json({ error: 'Bad Request', message: 'A suspension reason (min 5 characters) is required' });
+    }
+    const listing = await listingModel.updateStatus(req.params.id, 'suspended');
+    if (!listing) return res.status(404).json({ error: 'Not Found', message: 'Listing not found' });
+    await query('UPDATE listings SET suspension_reason = $1 WHERE id = $2', [reason, listing.id]);
+    await notificationModel.create({
+      user_id: listing.provider_id,
+      type: 'listing_suspended',
+      title: 'Listing Suspended',
+      body: reason,
+      metadata: { listingId: listing.id }
+    });
+    await audit.record(req.user.userId, 'listing_suspended', 'listing', listing.id, { reason });
+    res.status(200).json({ ...listing, suspension_reason: reason });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getUsers = async (req, res, next) => {
+  try {
+    const { page, limit, offset } = parsePagination(req);
+    const role = req.query.role || '';
+    const status = req.query.status || '';
+    const search = req.query.q || req.query.search || '';
+    const where = ['is_deleted = false'];
+    const values = [];
+
+    if (role) {
+      values.push(role);
+      where.push(`role = $${values.length}`);
+    }
+    if (status) {
+      values.push(status);
+      where.push(`status = $${values.length}`);
+    }
+    if (search) {
+      values.push(`%${search}%`);
+      where.push(`(full_name ILIKE $${values.length} OR email ILIKE $${values.length} OR mobile ILIKE $${values.length})`);
+    }
+
+    const whereClause = where.join(' AND ');
+    const count = await query(`SELECT COUNT(*) FROM users WHERE ${whereClause}`, values);
+    const { rows } = await query(
+      `SELECT id, email, mobile, role, status, status_reason, suspended_until, full_name, trust_score, created_at
+       FROM users
+       WHERE ${whereClause}
+       ORDER BY created_at DESC
+       LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+      [...values, limit, offset]
+    );
+
+    res.status(200).json({ users: rows, total: Number(count.rows[0].count), page, limit });
+  } catch (error) {
+    next(error);
+  }
+};
+

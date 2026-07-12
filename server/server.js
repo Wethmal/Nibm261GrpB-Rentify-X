@@ -62,3 +62,8 @@ const errorMiddleware = require('./middleware/error.middleware');
 const app = express();
 
 // --- Global Middleware ---
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173').split(',').map(o => o.trim());
+
