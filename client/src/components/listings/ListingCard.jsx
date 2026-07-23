@@ -9,3 +9,27 @@
  */
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { formatCurrency } from '../../utils/formatters.js';
+import { getListingCoverImage } from '../../utils/imageHelper.js';
+
+function ListingCard({ listing = {} }) {
+  const {
+    id,
+    title = 'Untitled Listing',
+    type = 'service',
+    price_per_unit,
+    pricePerUnit,
+    unit_label,
+    unitLabel,
+    photos = [],
+    district = 'Sri Lanka',
+    rating = 0,
+    average_rating,
+    provider_name,
+    providerName,
+    condition,
+    averageRating,
+    provider_id
+  } = listing;
+  const navigate = useNavigate();
+
