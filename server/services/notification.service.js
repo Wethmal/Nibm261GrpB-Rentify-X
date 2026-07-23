@@ -8,3 +8,5 @@
  * @version 1.0.0
  */
 
+const notificationModel = require('../models/notification.model');
+

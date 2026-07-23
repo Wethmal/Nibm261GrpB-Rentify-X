@@ -7,3 +7,13 @@
  */
 const { query } = require('../config/db');
 
+const create = async (userId, tokenHash, expiresAt) => {
+  const { rows } = await query(
+    `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+     VALUES ($1, $2, $3)
+     RETURNING id, user_id, token_hash, expires_at, is_used`,
+    [userId, tokenHash, expiresAt]
+  );
+  return rows[0];
+};
+

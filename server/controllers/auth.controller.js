@@ -299,3 +299,26 @@ const requestPasswordReset = async (req, res, next) => {
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1);
 
+    await passwordResetTokenModel.create(user.id, tokenHash, expiresAt);
+
+    // Send email
+    const resetUrl = `https://${req.headers.host || 'localhost'}/reset-password?token=${resetToken}`;
+    const emailBody = `<p>You requested a password reset. Click the link below to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>This link will expire in 1 hour.</p>`;
+
+    if (user.email) {
+      await notificationService.sendEmail(user.email, 'Password Reset Request', emailBody);
+    }
+
+    res.status(200).json({ message: 'If an account with that identifier exists, a reset link has been sent.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const tokenDoc = await passwordResetTokenModel.findByHash(tokenHash);
+
