@@ -209,3 +209,51 @@ const refresh = async (req, res, next) => {
 
     await refreshModel.create(user.id, newRefreshTokenString, newExpiresAt);
 
+    res.cookie('refreshToken', newRefreshTokenString, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.status(200).json({ token: newAccessToken });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const sendOtp = async (req, res, next) => {
+  try {
+    const { mobile } = req.body;
+    const code = await otpService.generate(mobile);
+    res.status(200).json({
+      message: 'OTP sent successfully',
+      devCode: process.env.NODE_ENV !== 'production' ? code : undefined
+    });
+  } catch (error) {
+    if (error.message.includes('Please wait')) {
+      return res.status(429).json({ error: error.message });
+    }
+    next(error);
+  }
+};
+
+const verifyOtp = async (req, res, next) => {
+  try {
+    const { mobile, otpCode } = req.body;
+    const verification = await otpService.verify(mobile, String(otpCode));
+
+    if (!verification.valid) {
+      return res.status(400).json({ error: verification.message });
+    }
+
+    const user = await userModel.findByMobile(mobile);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.status === 'pending_verification') {
+      await userModel.updateStatus(user.id, 'verified');
+      user.status = 'verified';
+    }
+
