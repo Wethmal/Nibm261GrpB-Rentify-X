@@ -257,3 +257,45 @@ const verifyOtp = async (req, res, next) => {
       user.status = 'verified';
     }
 
+    const token = authService.generateToken({ userId: user.id, role: user.role, status: user.status });
+
+    res.status(200).json({
+      message: 'OTP verified successfully',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        name: user.full_name,
+        mobile: user.mobile,
+        profile_photo_url: user.profile_photo_url
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const requestPasswordReset = async (req, res, next) => {
+  try {
+    const { email, mobile } = req.body;
+    const identifier = email || mobile;
+    if (!identifier) {
+      return res.status(400).json({ error: 'Email or mobile is required' });
+    }
+
+    const user = await userModel.findByEmailOrMobile(identifier);
+    if (!user) {
+      // Prevent enumeration: return 200 even if user doesn't exist
+      return res.status(200).json({ message: 'If an account with that identifier exists, a reset link has been sent.' });
+    }
+
+    // Generate secure 64-char hex token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    // 1-hour expiry
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+

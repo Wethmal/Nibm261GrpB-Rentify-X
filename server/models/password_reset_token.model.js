@@ -5,3 +5,5 @@
  * @dependencies ../config/db.js
  * @exports create, findByHash, markAsUsed
  */
+const { query } = require('../config/db');
+
