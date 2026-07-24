@@ -10,3 +10,14 @@
 
 const notificationModel = require('../models/notification.model');
 
+const sendInApp = async (userId, type, title, body, metadata = {}) => {
+  const notification = await notificationModel.create({
+    user_id: userId,
+    type,
+    title,
+    body,
+    metadata
+  });
+  return notification;
+};
+

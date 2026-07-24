@@ -322,3 +322,34 @@ const resetPassword = async (req, res, next) => {
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const tokenDoc = await passwordResetTokenModel.findByHash(tokenHash);
 
+    if (!tokenDoc || tokenDoc.is_used || new Date(tokenDoc.expires_at) < new Date()) {
+      return res.status(410).json({ error: 'Reset token is invalid or has expired' });
+    }
+
+    const newPasswordHash = await authService.hashPassword(newPassword);
+    await userModel.updatePassword(tokenDoc.user_id, newPasswordHash);
+
+    await passwordResetTokenModel.markAsUsed(tokenDoc.id);
+    await refreshModel.revokeAllForUser(tokenDoc.user_id);
+
+    const user = await userModel.findById(tokenDoc.user_id);
+    if (user && user.email) {
+      await notificationService.sendEmail(user.email, 'Password Reset Successful', '<p>Your password has been successfully reset.</p>');
+    }
+
+    res.status(200).json({ message: 'Password reset successful' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verify2faLogin = async (req, res, next) => {
+  try {
+    const { preAuthToken, otpCode } = req.body;
+    let decoded;
+    try {
+      decoded = authService.verifyToken(preAuthToken);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid or expired pre-auth token' });
+    }
+

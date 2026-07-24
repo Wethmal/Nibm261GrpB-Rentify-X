@@ -17,3 +17,11 @@ const create = async (userId, tokenHash, expiresAt) => {
   return rows[0];
 };
 
+const findByHash = async (tokenHash) => {
+  const { rows } = await query(
+    'SELECT * FROM password_reset_tokens WHERE token_hash = $1',
+    [tokenHash]
+  );
+  return rows[0] || null;
+};
+
