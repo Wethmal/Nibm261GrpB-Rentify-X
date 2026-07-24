@@ -85,3 +85,183 @@ function ResetPasswordPage() {
       return;
     }
 
+    try {
+      setError(null);
+      setLoading(true);
+
+      const response = await axiosInstance.post('/auth/reset-password', {
+        token,
+        newPassword
+      });
+
+      setSuccessMsg(response.data.message || 'Password reset successful!');
+      setTimeout(() => {
+        navigate('/login');
+      }, 3000);
+    } catch (err) {
+      const errDetail = err.response?.data?.error;
+      setError(typeof errDetail === 'object' ? (errDetail.message || JSON.stringify(errDetail)) : String(errDetail || 'Failed to reset password.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="login-container">
+      <div className="login-card">
+        <div className="login-header">
+          <h1>Reset Password</h1>
+          {step === 1 ? (
+            <p>Enter your email or mobile to receive a reset token</p>
+          ) : (
+            <p>Set a secure new password for your account</p>
+          )}
+        </div>
+
+        {/* Banners */}
+        {error && (
+          <div className="alert-error">
+            <AlertCircle size={18} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="lockout-banner" style={{ borderColor: 'rgba(40, 167, 69, 0.2)', backgroundColor: 'rgba(40, 167, 69, 0.08)' }}>
+            <CheckCircle2 size={18} style={{ color: '#28a745' }} className="lockout-icon" />
+            <div className="lockout-content">
+              <div className="lockout-title" style={{ color: '#28a745' }}>Success</div>
+              <div className="lockout-desc">{successMsg}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 1 Form */}
+        {step === 1 && (
+          <form onSubmit={handleRequestReset}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="identifier">Email or Mobile Number</label>
+              <div className="input-wrapper">
+                {identifier.includes('@') ? (
+                  <Mail className="input-icon-left" size={18} />
+                ) : (
+                  <Phone className="input-icon-left" size={18} />
+                )}
+                <input
+                  id="identifier"
+                  type="text"
+                  placeholder="e.g. user@example.com or 0771234567"
+                  className="form-input"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="spinner" />
+                  Sending Request...
+                </>
+              ) : (
+                'Send Reset Token'
+              )}
+            </button>
+          </form>
+        )}
+
+        {/* Step 2 Form */}
+        {step === 2 && (
+          <form onSubmit={handleResetPassword}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="token">Reset Token</label>
+              <div className="input-wrapper">
+                <KeyRound className="input-icon-left" size={18} />
+                <input
+                  id="token"
+                  type="text"
+                  placeholder="Enter or paste token from your email"
+                  className="form-input"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="newPassword">New Password</label>
+              <div className="input-wrapper">
+                <Lock className="input-icon-left" size={18} />
+                <input
+                  id="newPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="At least 8 characters"
+                  className="form-input"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="input-icon-right"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
+              <div className="input-wrapper">
+                <Lock className="input-icon-left" size={18} />
+                <input
+                  id="confirmPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Verify password"
+                  className="form-input"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="spinner" />
+                  Updating Password...
+                </>
+              ) : (
+                'Reset Password'
+              )}
+            </button>
+            
+            <button 
+              type="button" 
+              className="btn-primary" 
+              style={{ backgroundColor: 'transparent', color: 'var(--color-slate-gray)', border: '1px solid var(--color-border)', marginTop: '0.5rem' }}
+              onClick={() => setStep(1)}
+              disabled={loading}
+            >
+              Request a new token
+            </button>
+          </form>
+        )}
+
+        <div className="login-footer-links">
+          <Link to="/login" className="forgot-password-link" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
+            <ArrowLeft size={16} />
+            Back to Login
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default ResetPasswordPage;
