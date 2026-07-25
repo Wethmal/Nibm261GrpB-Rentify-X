@@ -57,3 +57,5 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
 import ProviderApprovalPage from './pages/admin/ProviderApprovalPage.jsx';
 import NICVerificationPage from './pages/admin/NICVerificationPage.jsx';
 import ListingModerationPage from './pages/admin/ListingModerationPage.jsx';
+import UserManagementPage from './pages/admin/UserManagementPage.jsx';
+import DisputesPage from './pages/admin/DisputesPage.jsx';
