@@ -22,3 +22,7 @@ const upload = multer({
 // GET /api/v1/listings — List all active listings (with optional filters)
 router.get('/', listingController.getAll);
 
+// GET /api/v1/listings/:id — Get listing by ID
+router.get('/:id', listingController.getById);
+
+// POST /api/v1/listings — Create a new listing (provider only)

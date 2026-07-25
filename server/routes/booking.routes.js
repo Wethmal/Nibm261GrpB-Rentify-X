@@ -23,3 +23,6 @@ router.get('/', authenticate, bookingController.getAll);
 router.get('/:id', authenticate, bookingController.getById);
 
 // PUT /api/v1/bookings/:id/accept — Accept a booking request (provider)
+router.put('/:id/accept', authenticate, bookingController.accept);
+
+// PUT /api/v1/bookings/:id/reject — Reject a booking request (provider)
