@@ -21,3 +21,13 @@ const sendInApp = async (userId, type, title, body, metadata = {}) => {
   return notification;
 };
 
+const sendEmail = async (toEmail, subject, htmlBody) => {
+  // Mock email transport for development
+  console.log(`\n=== EMAIL MOCK ===`);
+  console.log(`To: ${toEmail}`);
+  console.log(`Subject: ${subject}`);
+  console.log(`Body:\n${htmlBody}`);
+  console.log(`==================\n`);
+  return true;
+};
+

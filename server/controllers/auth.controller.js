@@ -353,3 +353,28 @@ const verify2faLogin = async (req, res, next) => {
       return res.status(401).json({ error: 'Invalid or expired pre-auth token' });
     }
 
+    if (!decoded.isPreAuth) {
+      return res.status(401).json({ error: 'Invalid token type' });
+    }
+
+    const user = await userModel.findById(decoded.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const verification = await otpService.verify(user.mobile, String(otpCode));
+    if (!verification.valid) {
+      return res.status(400).json({ error: verification.message });
+    }
+
+    const token = authService.generateToken(
+      { userId: user.id, role: user.role, status: user.status },
+      { expiresIn: '24h' }
+    );
+
+    const refreshTokenString = crypto.randomBytes(40).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await refreshModel.create(user.id, refreshTokenString, expiresAt);
+

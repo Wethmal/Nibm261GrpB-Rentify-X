@@ -25,3 +25,11 @@ const findByHash = async (tokenHash) => {
   return rows[0] || null;
 };
 
+const markAsUsed = async (tokenId) => {
+  const { rows } = await query(
+    'UPDATE password_reset_tokens SET is_used = true WHERE id = $1 RETURNING id',
+    [tokenId]
+  );
+  return rows[0] || null;
+};
+
