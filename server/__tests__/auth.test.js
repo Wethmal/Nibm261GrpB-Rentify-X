@@ -226,3 +226,109 @@ describe('Authentication & Authorization Integration Tests', () => {
         .post('/api/v1/auth/forgot-password')
         .send({ email: testUser.email });
 
+      expect(res.statusCode).toEqual(200);
+      expect(res.body).toHaveProperty('message');
+
+      const { rows } = await query('SELECT * FROM password_reset_tokens WHERE user_id = $1', [userId]);
+      expect(rows.length).toBeGreaterThan(0);
+    });
+
+    it('POST /api/v1/auth/forgot-password should return 200 for non-existing user (prevent enumeration)', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/forgot-password')
+        .send({ email: 'nobody@Rentify.lk' });
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body).toHaveProperty('message');
+    });
+
+    it('POST /api/v1/auth/reset-password should reset password with valid token', async () => {
+      const crypto = require('crypto');
+      const plainToken = crypto.randomBytes(32).toString('hex');
+      const hash = crypto.createHash('sha256').update(plainToken).digest('hex');
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1);
+
+      await query(
+        'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)',
+        [userId, hash, expiresAt]
+      );
+
+      const res = await request(app)
+        .post('/api/v1/auth/reset-password')
+        .send({ token: plainToken, newPassword: 'NewPassword123' });
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body).toHaveProperty('message', 'Password reset successful');
+
+      const newLogin = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ identifier: testUser.email, password: 'NewPassword123' });
+      expect(newLogin.statusCode).toEqual(200);
+
+      // Update testUser password so later tests don't fail if they rely on it
+      testUser.password = 'NewPassword123';
+    });
+
+    it('POST /api/v1/auth/reset-password should reject weak password', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/reset-password')
+        .send({ token: 'sometoken', newPassword: 'short' });
+
+      expect(res.statusCode).toEqual(400);
+    });
+
+    it('POST /api/v1/auth/reset-password should return 410 for expired/invalid token', async () => {
+      const res = await request(app)
+        .post('/api/v1/auth/reset-password')
+        .send({ token: 'invalidtoken', newPassword: 'ValidPassword123' });
+
+      expect(res.statusCode).toEqual(410);
+    });
+  });
+
+  describe('Middlewares Verification', () => {
+    it('Auth Middleware: should reject requests with missing token (401)', async () => {
+      const res = await request(app).get('/api/v1/admin/analytics');
+      expect(res.statusCode).toEqual(401);
+      expect(res.body).toHaveProperty('message', 'Unauthorized');
+    });
+
+    it('Auth Middleware: should reject requests with invalid token signature (401)', async () => {
+      const res = await request(app)
+        .get('/api/v1/admin/analytics')
+        .set('Authorization', 'Bearer invalidtokenhere');
+      expect(res.statusCode).toEqual(401);
+      expect(res.body).toHaveProperty('message', 'Invalid token');
+    });
+
+    it('Role Middleware: requireRole("admin") should block consumer user (403)', async () => {
+      // The main testUser is 'consumer', which we logged in. Let's use the accessToken we got.
+      const res = await request(app)
+        .get('/api/v1/admin/analytics')
+        .set('Authorization', `Bearer ${accessToken}`);
+
+      expect(res.statusCode).toEqual(403);
+      expect(res.body).toHaveProperty('message', 'Insufficient permissions');
+    });
+
+    it('Role Middleware: requireRole("admin") should allow admin user', async () => {
+      // Register an admin user or update testUser role to admin in DB temporarily
+      await query("UPDATE users SET role = 'admin' WHERE id = $1", [userId]);
+
+      // Generate a new valid token with 'admin' role
+      const adminToken = jwt.sign(
+        { userId, role: 'admin', status: 'verified' },
+        process.env.JWT_SECRET || 'secret',
+        { expiresIn: '1h' }
+      );
+
+      const res = await request(app)
+        .get('/api/v1/admin/analytics')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body).toHaveProperty('status', 'stub');
+    });
+  });
+});

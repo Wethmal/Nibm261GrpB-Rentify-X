@@ -33,3 +33,4 @@ const markAsUsed = async (tokenId) => {
   return rows[0] || null;
 };
 
+module.exports = { create, findByHash, markAsUsed };

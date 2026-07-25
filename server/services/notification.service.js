@@ -31,3 +31,12 @@ const sendEmail = async (toEmail, subject, htmlBody) => {
   return true;
 };
 
+const sendSMS = async (toMobile, message) => {
+  // TODO: Integrate with SMS provider (Twilio, Dialog, Mobitel API for Sri Lanka)
+  console.log(`\n=== SMS MOCK ===`);
+  console.log(`To: ${toMobile}`);
+  console.log(`Message: ${message}`);
+  console.log(`==================\n`);
+  return true;
+};
+

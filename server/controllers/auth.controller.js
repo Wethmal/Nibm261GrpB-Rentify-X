@@ -378,3 +378,41 @@ const verify2faLogin = async (req, res, next) => {
 
     await refreshModel.create(user.id, refreshTokenString, expiresAt);
 
+    res.cookie('refreshToken', refreshTokenString, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.status(200).json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        name: user.full_name,
+        mobile: user.mobile,
+        profile_photo_url: user.profile_photo_url
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const toggle2fa = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const { enabled } = req.body;
+
+    await userModel.update2faStatus(userId, enabled);
+
+    res.status(200).json({ message: `2FA ${enabled ? 'enabled' : 'disabled'} successfully`, is_2fa_enabled: enabled });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { register, login, refresh, sendOtp, verifyOtp, requestPasswordReset, resetPassword, verify2faLogin, toggle2fa };
