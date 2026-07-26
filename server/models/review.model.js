@@ -12,3 +12,16 @@ const findByListing = async (listingId) => {
   return result.rows;
 };
 
+const findByProvider = async (providerId) => {
+  const sql = `
+    SELECT r.*, u.full_name AS reviewer_name, l.title AS listing_title
+    FROM reviews r
+    LEFT JOIN users u ON r.reviewer_id = u.id
+    LEFT JOIN listings l ON r.listing_id = l.id
+    WHERE r.reviewee_id = $1 AND r.status = 'approved'
+    ORDER BY r.created_at DESC
+  `;
+  const { rows } = await query(sql, [providerId]);
+  return rows;
+};
+

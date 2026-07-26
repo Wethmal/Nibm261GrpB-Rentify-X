@@ -9,3 +9,7 @@
  */
 const express = require('express');
 const router = express.Router();
+const reviewController = require('../controllers/review.controller');
+const authenticate = require('../middleware/auth.middleware');
+
+// POST /api/v1/reviews — Submit a review for a completed booking
