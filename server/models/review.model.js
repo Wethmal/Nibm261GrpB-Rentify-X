@@ -25,3 +25,14 @@ const findByProvider = async (providerId) => {
   return rows;
 };
 
+const create = async (reviewData) => {
+  const { booking_id, reviewer_id, reviewee_id, listing_id, rating, comment, status = 'approved' } = reviewData;
+  const { rows } = await query(
+    `INSERT INTO reviews (booking_id, reviewer_id, reviewee_id, listing_id, rating, comment, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING *`,
+    [booking_id, reviewer_id, reviewee_id, listing_id, rating, comment || '', status]
+  );
+  return rows[0];
+};
+
