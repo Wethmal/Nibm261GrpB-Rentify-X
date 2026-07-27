@@ -36,3 +36,11 @@ const create = async (reviewData) => {
   return rows[0];
 };
 
+const updateStatus = async (id, status) => {
+  const { rows } = await query(
+    'UPDATE reviews SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+    [status, id]
+  );
+  return rows[0] || null;
+};
+

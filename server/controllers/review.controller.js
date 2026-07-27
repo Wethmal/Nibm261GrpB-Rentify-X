@@ -39,3 +39,25 @@ const create = async (req, res, next) => {
       [listingStats.average_rating, listingStats.review_count, listingId]
     );
 
+    const providerStats = await reviewModel.calculateAverageRating(booking.provider_id, 'provider');
+    await userModel.updateTrustScore(booking.provider_id, providerStats.average_rating);
+
+    res.status(201).json(review);
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Conflict', message: 'This booking has already been reviewed' });
+    }
+    next(error);
+  }
+};
+
+const refreshAggregates = async (review) => {
+  if (review.listing_id) {
+    const listingStats = await reviewModel.calculateAverageRating(review.listing_id, 'listing');
+    await query('UPDATE listings SET average_rating = $1, review_count = $2, updated_at = NOW() WHERE id = $3',
+      [listingStats.average_rating, listingStats.review_count, review.listing_id]);
+  }
+  const providerStats = await reviewModel.calculateAverageRating(review.reviewee_id, 'provider');
+  await userModel.updateTrustScore(review.reviewee_id, providerStats.average_rating);
+};
+

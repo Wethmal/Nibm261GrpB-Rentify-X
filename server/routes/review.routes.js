@@ -16,3 +16,8 @@ const authenticate = require('../middleware/auth.middleware');
 router.post('/', authenticate, reviewController.create);
 
 // PUT /api/v1/reviews/:id — Edit own review
+router.put('/:id', authenticate, reviewController.update);
+
+// DELETE /api/v1/reviews/:id — Delete own review
+router.delete('/:id', authenticate, reviewController.remove);
+
