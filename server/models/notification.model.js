@@ -18,3 +18,22 @@ const findByUserId = async (userId, pagination = {}) => {
   return result.rows;
 };
 
+const create = async (notificationData) => {
+  const { user_id, type, title, body, metadata = {} } = notificationData;
+  const sql = `
+    INSERT INTO notifications (user_id, type, title, body, metadata)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING *
+  `;
+  const result = await query(sql, [user_id, type, title, body, JSON.stringify(metadata)]);
+  const row = result.rows[0];
+  // Live delivery (SSE) + email for important events; never let delivery failures break the caller
+  try {
+    require('../services/realtime').publish(user_id, 'notification', row);
+    require('../services/notification.service').deliverExternal(row);
+  } catch (err) {
+    console.error('Notification delivery hook failed:', err.message);
+  }
+  return row;
+};
+
