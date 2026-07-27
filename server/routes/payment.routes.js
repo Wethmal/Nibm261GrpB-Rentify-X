@@ -10,3 +10,9 @@
 const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/payment.controller');
+const authenticate = require('../middleware/auth.middleware');
+
+// POST /api/v1/payments/initiate — Initiate payment for a booking (consumer)
+router.post('/initiate', authenticate, paymentController.initiate);
+
+// POST /api/v1/payments/webhook — Payment gateway webhook (no auth — verified by gateway signature)
