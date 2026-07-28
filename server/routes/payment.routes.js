@@ -16,3 +16,9 @@ const authenticate = require('../middleware/auth.middleware');
 router.post('/initiate', authenticate, paymentController.initiate);
 
 // POST /api/v1/payments/webhook — Payment gateway webhook (no auth — verified by gateway signature)
+router.post('/webhook', paymentController.handleWebhook);
+
+// POST /api/v1/payments/:id/release — Release escrowed funds to provider (admin or system)
+router.post('/:id/release', authenticate, paymentController.releaseFunds);
+
+// POST /api/v1/payments/:id/refund — Refund payment to consumer (admin)

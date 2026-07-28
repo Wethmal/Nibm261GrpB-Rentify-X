@@ -26,3 +26,50 @@ const initiate = async (req, res, next) => {
       return res.status(200).json({ payment: existing, redirectUrl: null, clientSecret: existing.gateway_reference });
     }
 
+    const gatewayReference = `local_${crypto.randomUUID()}`;
+    const payment = await paymentModel.create({
+      booking_id: booking.id,
+      amount: booking.total_price,
+      gateway_reference: gatewayReference
+    });
+
+    res.status(200).json({
+      payment,
+      redirectUrl: null,
+      clientSecret: gatewayReference,
+      message: 'Payment intent created'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const handleWebhook = async (req, res, next) => {
+  try {
+    const { paymentId, status = 'escrowed', gatewayReference } = req.body;
+    if (!paymentId) {
+      return res.status(400).json({ error: 'Bad Request', message: 'paymentId is required' });
+    }
+    const payment = await paymentModel.updateStatusAndGatewayRef(paymentId, status, gatewayReference);
+    if (!payment) {
+      return res.status(404).json({ error: 'Not Found', message: 'Payment not found' });
+    }
+    res.status(200).json({ received: true, payment });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const releaseFunds = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only admins can release funds' });
+    }
+    const payment = await paymentModel.updateStatusAndGatewayRef(req.params.id, 'released');
+    if (!payment) return res.status(404).json({ error: 'Not Found', message: 'Payment not found' });
+    res.status(200).json(payment);
+  } catch (error) {
+    next(error);
+  }
+};
+

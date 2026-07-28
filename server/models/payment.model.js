@@ -16,3 +16,25 @@ const findByBookingId = async (bookingId) => {
   return rows[0] || null;
 };
 
+const create = async (paymentData) => {
+  const { booking_id, amount, platform_fee = Number(amount) * 0.1, status = 'pending', gateway_reference = null } = paymentData;
+  const { rows } = await query(
+    `INSERT INTO payments (booking_id, amount, platform_fee, status, gateway_reference)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [booking_id, amount, platform_fee, status, gateway_reference]
+  );
+  return rows[0];
+};
+
+const updateStatusAndGatewayRef = async (id, status, gatewayRef) => {
+  const { rows } = await query(
+    `UPDATE payments
+     SET status = $1, gateway_reference = COALESCE($2, gateway_reference), updated_at = NOW()
+     WHERE id = $3
+     RETURNING *`,
+    [status, gatewayRef || null, id]
+  );
+  return rows[0] || null;
+};
+

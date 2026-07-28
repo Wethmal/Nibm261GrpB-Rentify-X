@@ -8,3 +8,12 @@
  * @version 1.0.0
  */
 
+const createPaymentSession = async (bookingId, amount, currency = 'LKR') => {
+  // TODO: Integrate with PayHere or Stripe SDK
+  // TODO: Create a payment session/checkout with the booking amount
+  // TODO: Set return/callback URLs for success, failure, and webhook
+  // TODO: Return { sessionId, redirectUrl } for client-side redirect
+  // TODO: Support LKR (Sri Lankan Rupee) as primary currency
+  throw new Error('createPaymentSession not implemented — integrate PayHere/Stripe SDK');
+};
+
