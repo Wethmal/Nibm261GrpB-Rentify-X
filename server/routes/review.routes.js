@@ -21,3 +21,7 @@ router.put('/:id', authenticate, reviewController.update);
 // DELETE /api/v1/reviews/:id — Delete own review
 router.delete('/:id', authenticate, reviewController.remove);
 
+// GET /api/v1/reviews/listing/:listingId — Get all reviews for a listing
+router.get('/listing/:listingId', reviewController.getByListing);
+
+// GET /api/v1/reviews/provider/:providerId — Get all reviews for a provider

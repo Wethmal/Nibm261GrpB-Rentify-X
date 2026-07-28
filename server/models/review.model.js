@@ -44,3 +44,15 @@ const updateStatus = async (id, status) => {
   return rows[0] || null;
 };
 
+const calculateAverageRating = async (targetId, type = 'listing') => {
+  const column = type === 'provider' ? 'reviewee_id' : 'listing_id';
+  const { rows } = await query(
+    `SELECT COALESCE(AVG(rating), 0)::numeric(3,2) AS average_rating,
+            COUNT(*)::int AS review_count
+     FROM reviews
+     WHERE ${column} = $1 AND status = 'approved'`,
+    [targetId]
+  );
+  return rows[0] || { average_rating: 0, review_count: 0 };
+};
+
