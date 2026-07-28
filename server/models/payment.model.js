@@ -38,3 +38,4 @@ const updateStatusAndGatewayRef = async (id, status, gatewayRef) => {
   return rows[0] || null;
 };
 
+module.exports = { findById, findByBookingId, create, updateStatusAndGatewayRef };

@@ -22,3 +22,9 @@ router.post('/webhook', paymentController.handleWebhook);
 router.post('/:id/release', authenticate, paymentController.releaseFunds);
 
 // POST /api/v1/payments/:id/refund — Refund payment to consumer (admin)
+router.post('/:id/refund', authenticate, paymentController.refund);
+
+// GET /api/v1/payments/:id/receipt — Get payment receipt
+router.get('/:id/receipt', authenticate, paymentController.getReceipt);
+
+module.exports = router;

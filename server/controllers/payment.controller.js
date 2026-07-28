@@ -73,3 +73,30 @@ const releaseFunds = async (req, res, next) => {
   }
 };
 
+const refund = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only admins can refund payments' });
+    }
+    const payment = await paymentModel.updateStatusAndGatewayRef(req.params.id, 'refunded');
+    if (!payment) return res.status(404).json({ error: 'Not Found', message: 'Payment not found' });
+    res.status(200).json(payment);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getReceipt = async (req, res, next) => {
+  try {
+    const payment = await paymentModel.findById(req.params.id);
+    if (!payment) return res.status(404).json({ error: 'Not Found', message: 'Payment not found' });
+    if (!canAccessPayment(payment, req.user)) {
+      return res.status(403).json({ error: 'Forbidden', message: 'You cannot access this receipt' });
+    }
+    res.status(200).json({ receipt: payment });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { initiate, handleWebhook, releaseFunds, refund, getReceipt };
