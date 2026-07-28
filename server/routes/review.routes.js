@@ -25,3 +25,6 @@ router.delete('/:id', authenticate, reviewController.remove);
 router.get('/listing/:listingId', reviewController.getByListing);
 
 // GET /api/v1/reviews/provider/:providerId — Get all reviews for a provider
+router.get('/provider/:providerId', reviewController.getByProvider);
+
+module.exports = router;

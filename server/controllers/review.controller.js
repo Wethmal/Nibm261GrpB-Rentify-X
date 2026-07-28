@@ -100,3 +100,22 @@ const remove = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+const getByListing = async (req, res, next) => {
+  try {
+    const reviews = await reviewModel.findByListing(req.params.listingId);
+    res.status(200).json({ reviews });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getByProvider = async (req, res, next) => {
+  try {
+    const reviews = await reviewModel.findByProvider(req.params.providerId);
+    res.status(200).json({ reviews });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { create, update, remove, getByListing, getByProvider };

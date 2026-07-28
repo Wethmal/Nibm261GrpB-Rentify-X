@@ -56,3 +56,4 @@ const calculateAverageRating = async (targetId, type = 'listing') => {
   return rows[0] || { average_rating: 0, review_count: 0 };
 };
 
+module.exports = { findByListing, findByProvider, create, updateStatus, calculateAverageRating };
