@@ -83,3 +83,7 @@ app.use(cors({
   },
   credentials: true,
 }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// --- Static File Serving (uploaded avatars, listing photos, NIC docs) ---
