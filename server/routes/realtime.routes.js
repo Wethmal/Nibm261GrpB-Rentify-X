@@ -4,3 +4,4 @@
  * EventSource cannot send an Authorization header, so the JWT is accepted as ?token=.
  * Mounted at /api/v1/realtime.
  */
+const express = require('express');
