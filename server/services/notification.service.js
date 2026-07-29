@@ -40,3 +40,14 @@ const sendSMS = async (toMobile, message) => {
   return true;
 };
 
+const notify = async (userId, event, data = {}) => {
+  // Currently, we only dispatch in-app notifications
+  try {
+    await sendInApp(userId, event, data.title || 'Notification', data.body || '', data.metadata || {});
+    return true;
+  } catch (err) {
+    console.error('Failed to dispatch notification:', err);
+    return false;
+  }
+};
+

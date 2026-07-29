@@ -1,0 +1,105 @@
+/* Navbar.css */
+
+.navbar {
+  background-color: var(--color-white);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-main);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.navbar__container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar__brand {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-primary-navy);
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+}
+
+.navbar__brand-dot {
+  color: var(--color-primary-blue);
+  font-weight: 900;
+}
+
+.navbar__links-desktop {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.navbar__link {
+  color: var(--color-dark-charcoal);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  transition: var(--transition);
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+.navbar__link:hover,
+.navbar__link.active {
+  color: var(--color-primary-blue);
+  text-decoration: none;
+}
+
+.navbar__link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--color-primary-blue);
+  transition: var(--transition);
+}
+
+.navbar__link:hover::after,
+.navbar__link.active::after {
+  width: 100%;
+}
+
+.navbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.navbar__btn-signin {
+  background-color: var(--color-primary-navy);
+  color: var(--color-white);
+  border-radius: 9999px;
+  padding: 0.65rem 1.6rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  transition: var(--transition);
+  border: 1px solid var(--color-primary-navy);
+}
+
+.navbar__btn-signin:hover {
+  background-color: var(--color-primary-blue);
+  border-color: var(--color-primary-blue);
+  color: var(--color-white);
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(3, 100, 250, 0.2);
+}
+
