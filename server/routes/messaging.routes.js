@@ -1,0 +1,10 @@
+/**
+ * @file messaging.routes.js
+ * @module MessagingRoutes
+ * @description In-app messaging routes organized by booking conversations. Authenticated users can send and retrieve messages within a booking context. Mounted under /api/v1/messages/.
+ * @dependencies express, ../controllers/messaging.controller.js, ../middleware/auth.middleware.js
+ * @exports Express Router instance
+ * @author Rentify Engineering Team
+ * @version 1.0.0
+ */
+const express = require('express');
