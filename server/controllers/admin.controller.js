@@ -180,3 +180,139 @@ const getUsers = async (req, res, next) => {
   }
 };
 
+const banUser = async (req, res, next) => {
+  try {
+    if (req.params.id === req.user.userId) {
+      return res.status(400).json({ error: 'Bad Request', message: 'You cannot ban your own account' });
+    }
+    const reason = String(req.body.reason || '').trim() || 'Banned by admin';
+    const user = await restriction.ban(req.params.id, reason);
+    if (!user) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    await audit.record(req.user.userId, 'user_banned', 'user', req.params.id, { reason });
+    await notificationModel.create({ user_id: req.params.id, type: 'moderation_notice', title: 'Account banned', body: reason, metadata: {} });
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const suspendUser = async (req, res, next) => {
+  try {
+    if (req.params.id === req.user.userId) {
+      return res.status(400).json({ error: 'Bad Request', message: 'You cannot suspend your own account' });
+    }
+    const reason = String(req.body.reason || '').trim() || 'Suspended by admin';
+    const days = req.body.days === undefined ? 7 : req.body.days;
+    let user;
+    try { user = await restriction.suspend(req.params.id, days, reason); }
+    catch (e) { return res.status(e.status || 500).json({ error: 'Bad Request', message: e.message }); }
+    if (!user) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    await audit.record(req.user.userId, 'user_suspended', 'user', req.params.id, { reason, days: Number(days) });
+    await notificationModel.create({
+      user_id: req.params.id, type: 'moderation_notice', title: 'Account suspended',
+      body: `Your account is suspended for ${Number(days)} day(s): ${reason}`, metadata: {}
+    });
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const reinstateUser = async (req, res, next) => {
+  try {
+    const user = await restriction.reinstate(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    await audit.record(req.user.userId, 'user_reinstated', 'user', req.params.id, {});
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getUserDetail = async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, email, mobile, role, status, status_reason, suspended_until, banned_at, full_name, district, trust_score, created_at
+       FROM users WHERE id = $1 AND is_deleted = false`, [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    const [reports, logs] = await Promise.all([
+      query('SELECT id, reason, status, created_at FROM user_reports WHERE reported_user_id = $1 ORDER BY created_at DESC LIMIT 20', [req.params.id]),
+      query("SELECT id, action, details, created_at FROM admin_audit_logs WHERE target_type = 'user' AND target_id = $1 ORDER BY created_at DESC LIMIT 20", [req.params.id]),
+    ]);
+    res.status(200).json({ user: rows[0], reports: reports.rows, moderationHistory: logs.rows });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getNICVerificationDetail = async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, email, mobile, full_name, role, status, district, address, nic_number, nic_document_url,
+              nic_review_note, nic_reviewed_at, created_at
+       FROM users WHERE id = $1 AND is_deleted = false`, [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    res.status(200).json({ verification: rows[0] });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const decideNICVerification = async (req, res, next) => {
+  try {
+    const { decision } = req.body;
+    const note = String(req.body.note || '').trim();
+    if (!['approve', 'reject'].includes(decision)) {
+      return res.status(400).json({ error: 'Bad Request', message: "decision must be 'approve' or 'reject'" });
+    }
+    if (note.length < 3) {
+      return res.status(400).json({ error: 'Bad Request', message: 'A review note is required' });
+    }
+    const approve = decision === 'approve';
+    // Approve -> verified. Reject -> stay pending but clear the document so the user can re-upload.
+    const { rows } = await query(
+      `UPDATE users
+       SET status = CASE WHEN $2 THEN 'verified' ELSE status END,
+           nic_document_url = CASE WHEN $2 THEN nic_document_url ELSE NULL END,
+           nic_review_note = $3, nic_reviewed_at = NOW(), updated_at = NOW()
+       WHERE id = $1 AND is_deleted = false
+       RETURNING id, email, full_name, status, nic_review_note`,
+      [req.params.id, approve, note]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    await audit.record(req.user.userId, approve ? 'nic_approved' : 'nic_rejected', 'user', req.params.id, { note });
+    await notificationModel.create({
+      user_id: req.params.id,
+      type: approve ? 'nic_approved' : 'nic_rejected',
+      title: approve ? 'Identity verified' : 'Identity verification rejected',
+      body: approve ? 'Your NIC was verified. Your account is now trusted.' : `Your NIC upload was rejected: ${note}. Please upload a clearer document.`,
+      metadata: { note }
+    });
+    res.status(200).json({ user: rows[0] });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getCategories = async (req, res, next) => {
+  try {
+    const categories = await categoryModel.findAll(true);
+    res.status(200).json({ categories });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createCategory = async (req, res, next) => {
+  try {
+    const { name, type, parent_id } = req.body;
+    if (!name || !['service', 'equipment'].includes(type)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Valid name and type are required' });
+    }
+    const category = await categoryModel.create({ name, type, parent_id });
+    res.status(201).json(category);
+  } catch (error) {
+    next(error);
+  }
+};
+

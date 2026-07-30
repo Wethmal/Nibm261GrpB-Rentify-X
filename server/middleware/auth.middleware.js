@@ -21,3 +21,6 @@
 
 const jwt = require('jsonwebtoken');
 
+/**
+ * Middleware that verifies JWT tokens and attaches user to request.
+ */
