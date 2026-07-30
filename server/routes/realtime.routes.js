@@ -11,3 +11,14 @@ const realtime = require('../services/realtime');
 const restriction = require('../services/restriction.service');
 const { query } = require('../config/db');
 
+router.get('/stream', async (req, res) => {
+  let userId;
+  try {
+    const decoded = jwt.verify(String(req.query.token || ''), process.env.JWT_SECRET || 'secret');
+    userId = decoded.userId || decoded.id;
+  } catch (err) {
+    return res.status(401).json({ error: 'Unauthorized', message: 'Invalid token' });
+  }
+  const r = await restriction.checkRestriction(userId);
+  if (r.restricted) return res.status(403).json({ error: 'Account restricted', message: 'Account suspended/banned' });
+

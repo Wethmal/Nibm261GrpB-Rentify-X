@@ -12,3 +12,6 @@ const router = express.Router();
 const notificationController = require('../controllers/notification.controller');
 const authenticate = require('../middleware/auth.middleware');
 
+// GET /api/v1/notifications — Get all notifications for authenticated user
+router.get('/', authenticate, notificationController.getAll);
+

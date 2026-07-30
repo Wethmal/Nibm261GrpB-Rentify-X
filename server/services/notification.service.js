@@ -51,3 +51,9 @@ const notify = async (userId, event, data = {}) => {
   }
 };
 
+const EMAIL_TYPES = new Set([
+  'new_booking_request', 'booking_accepted', 'booking_rejected', 'booking_cancelled',
+  'booking_completed', 'booking_confirmed', 'moderation_notice', 'report_update',
+  'provider_approved', 'provider_rejected', 'nic_approved', 'nic_rejected',
+]);
+

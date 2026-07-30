@@ -37,3 +37,11 @@ const create = async (notificationData) => {
   return row;
 };
 
+const markAsRead = async (id, userId) => {
+  const result = await query(
+    'UPDATE notifications SET is_read = true WHERE id = $1 AND user_id = $2 RETURNING *',
+    [id, userId]
+  );
+  return result.rows[0] || null;
+};
+
