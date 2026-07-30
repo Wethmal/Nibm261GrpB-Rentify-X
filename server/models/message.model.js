@@ -35,3 +35,16 @@ const findConversationsByUser = async (userId) => {
   return rows;
 };
 
+const findByBookingId = async (bookingId) => {
+  const sql = `
+    SELECT m.*, sender.full_name AS sender_name, recipient.full_name AS recipient_name
+    FROM messages m
+    LEFT JOIN users sender ON sender.id = m.sender_id
+    LEFT JOIN users recipient ON recipient.id = m.recipient_id
+    WHERE m.booking_id = $1
+    ORDER BY m.created_at ASC
+  `;
+  const { rows } = await query(sql, [bookingId]);
+  return rows;
+};
+

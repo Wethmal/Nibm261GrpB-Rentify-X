@@ -10,3 +10,6 @@
 const express = require('express');
 const router = express.Router();
 const messagingController = require('../controllers/messaging.controller');
+const authenticate = require('../middleware/auth.middleware');
+
+// GET /api/v1/messages/conversations — Get all conversations for the authenticated user

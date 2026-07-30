@@ -13,3 +13,30 @@ const getBookingForParticipant = async (bookingId, userId) => {
   return { booking };
 };
 
+const getConversations = async (req, res, next) => {
+  try {
+    const conversations = await messageModel.findConversationsByUser(req.user.userId);
+    res.status(200).json({ conversations });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getMessages = async (req, res, next) => {
+  try {
+    const result = await getBookingForParticipant(req.params.bookingId, req.user.userId);
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error, message: result.error });
+    }
+
+    const readRows = await messageModel.markAsRead(req.params.bookingId, req.user.userId);
+    // Let the sender see read receipts live
+    const otherId = result.booking.consumer_id === req.user.userId ? result.booking.provider_id : result.booking.consumer_id;
+    if (readRows.length) realtime.publish(otherId, 'message_read', { bookingId: req.params.bookingId, ids: readRows.map((m) => m.id) });
+    const messages = await messageModel.findByBookingId(req.params.bookingId);
+    res.status(200).json({ booking: result.booking, messages });
+  } catch (error) {
+    next(error);
+  }
+};
+
