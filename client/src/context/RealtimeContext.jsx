@@ -33,3 +33,37 @@ export function RealtimeProvider({ children }) {
     }
   }, []);
 
+  const dismissToast = useCallback((id) => setToasts((t) => t.filter((x) => x.id !== id)), []);
+
+  const pushToast = useCallback((n) => {
+    const id = n.id || `t_${Date.now()}`;
+    setToasts((t) => [...t.slice(-3), { id, title: n.title, body: n.body }]);
+    setTimeout(() => dismissToast(id), 6000);
+  }, [dismissToast]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) {
+      setUnreadCount(0);
+      setConnected(false);
+      return undefined;
+    }
+
+    refreshUnread();
+    const base = axiosInstance.defaults.baseURL || '';
+    const es = new EventSource(`${base}/realtime/stream?token=${encodeURIComponent(token)}`);
+    sourceRef.current = es;
+
+    es.addEventListener('ready', () => setConnected(true));
+    es.addEventListener('notification', (e) => {
+      const n = JSON.parse(e.data);
+      setUnreadCount((c) => c + 1);
+      pushToast(n);
+      emit('notification', n);
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && document.hidden) {
+        try { new Notification(n.title, { body: n.body }); } catch (_) { /* unsupported */ }
+      }
+    });
+    es.addEventListener('message', (e) => emit('message', JSON.parse(e.data)));
+    es.addEventListener('message_read', (e) => emit('message_read', JSON.parse(e.data)));
+    es.onerror = () => setConnected(false); // EventSource reconnects on its own
+

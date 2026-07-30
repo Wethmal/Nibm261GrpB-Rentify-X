@@ -21,3 +21,4 @@
   font-size: 0.9rem;
   animation: rt-toast-in 0.25s ease-out;
 }
+.rt-toast span { color: #cbd5e1; font-size: 0.85rem; }
