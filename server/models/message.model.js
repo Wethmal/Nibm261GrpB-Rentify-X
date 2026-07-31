@@ -48,3 +48,14 @@ const findByBookingId = async (bookingId) => {
   return rows;
 };
 
+const create = async (messageData) => {
+  const { booking_id, sender_id, recipient_id, content } = messageData;
+  const { rows } = await query(
+    `INSERT INTO messages (booking_id, sender_id, recipient_id, content)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [booking_id, sender_id, recipient_id, content]
+  );
+  return rows[0];
+};
+

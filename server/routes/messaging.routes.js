@@ -13,3 +13,6 @@ const messagingController = require('../controllers/messaging.controller');
 const authenticate = require('../middleware/auth.middleware');
 
 // GET /api/v1/messages/conversations — Get all conversations for the authenticated user
+router.get('/conversations', authenticate, messagingController.getConversations);
+
+// GET /api/v1/messages/:bookingId — Get messages for a specific booking conversation

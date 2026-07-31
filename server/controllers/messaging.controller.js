@@ -40,3 +40,19 @@ const getMessages = async (req, res, next) => {
   }
 };
 
+const sendMessage = async (req, res, next) => {
+  try {
+    const content = String(req.body.content || '').trim();
+    if (!content) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Message content is required' });
+    }
+
+    const result = await getBookingForParticipant(req.params.bookingId, req.user.userId);
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error, message: result.error });
+    }
+
+    const recipientId = result.booking.consumer_id === req.user.userId
+      ? result.booking.provider_id
+      : result.booking.consumer_id;
+
