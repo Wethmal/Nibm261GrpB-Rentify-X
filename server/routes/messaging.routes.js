@@ -16,3 +16,6 @@ const authenticate = require('../middleware/auth.middleware');
 router.get('/conversations', authenticate, messagingController.getConversations);
 
 // GET /api/v1/messages/:bookingId — Get messages for a specific booking conversation
+router.get('/:bookingId', authenticate, messagingController.getMessages);
+
+// POST /api/v1/messages/:bookingId — Send a message in a booking conversation

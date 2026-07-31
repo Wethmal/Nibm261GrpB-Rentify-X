@@ -59,3 +59,13 @@ const create = async (messageData) => {
   return rows[0];
 };
 
+const markAsRead = async (bookingId, recipientId) => {
+  const { rows } = await query(
+    `UPDATE messages SET is_read = true, read_at = NOW(), delivered_at = COALESCE(delivered_at, NOW())
+     WHERE booking_id = $1 AND recipient_id = $2 AND is_read = false
+     RETURNING *`,
+    [bookingId, recipientId]
+  );
+  return rows;
+};
+

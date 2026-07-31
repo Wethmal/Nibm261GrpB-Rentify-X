@@ -56,3 +56,24 @@ const sendMessage = async (req, res, next) => {
       ? result.booking.provider_id
       : result.booking.consumer_id;
 
+    const message = await messageModel.create({
+      booking_id: req.params.bookingId,
+      sender_id: req.user.userId,
+      recipient_id: recipientId,
+      content
+    });
+
+    // Live push to the recipient's open stream; mark delivered if they are online
+    if (realtime.publish(recipientId, 'message', message)) {
+      const d = await query('UPDATE messages SET delivered_at = NOW() WHERE id = $1 RETURNING *', [message.id]);
+      if (d.rows[0]) Object.assign(message, d.rows[0]);
+    }
+
+    await notificationModel.create({
+      user_id: recipientId,
+      type: 'new_message',
+      title: 'New Message',
+      body: content.length > 120 ? `${content.slice(0, 117)}...` : content,
+      metadata: { bookingId: req.params.bookingId }
+    });
+
