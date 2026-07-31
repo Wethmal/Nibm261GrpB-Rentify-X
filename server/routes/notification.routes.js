@@ -15,3 +15,7 @@ const authenticate = require('../middleware/auth.middleware');
 // GET /api/v1/notifications — Get all notifications for authenticated user
 router.get('/', authenticate, notificationController.getAll);
 
+// PUT /api/v1/notifications/:id/read — Mark a notification as read
+router.put('/:id/read', authenticate, notificationController.markAsRead);
+
+// PUT /api/v1/notifications/read-all — Mark all notifications as read

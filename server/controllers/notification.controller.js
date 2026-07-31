@@ -20,3 +20,24 @@ const getAll = async (req, res, next) => {
   }
 };
 
+const markAsRead = async (req, res, next) => {
+  try {
+    const notification = await notificationModel.markAsRead(req.params.id, req.user.userId);
+    if (!notification) {
+      return res.status(404).json({ error: 'Not Found', message: 'Notification not found' });
+    }
+    res.status(200).json(notification);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const markAllAsRead = async (req, res, next) => {
+  try {
+    const notifications = await notificationModel.markAllAsRead(req.user.userId);
+    res.status(200).json({ updated: notifications.length, notifications });
+  } catch (error) {
+    next(error);
+  }
+};
+

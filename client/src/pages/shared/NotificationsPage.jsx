@@ -98,3 +98,105 @@ function NotificationsPage() {
         </button>
       </div>
 
+      {showSettings && (
+        <div className="settings-panel">
+          <h3>Notification Preferences</h3>
+          {desktopPermission !== 'unsupported' && (
+            <div className="preference-group">
+              <label className="toggle-label">
+                <span>
+                  Desktop push alerts: <strong>{desktopPermission === 'granted' ? 'enabled' : desktopPermission === 'denied' ? 'blocked in browser settings' : 'off'}</strong>
+                </span>
+              </label>
+              {desktopPermission === 'default' && (
+                <button type="button" className="btn-settings" onClick={enableDesktopAlerts}>Enable desktop alerts</button>
+              )}
+            </div>
+          )}
+          <div className="preference-group">
+            <label className="toggle-label">
+              <input type="checkbox" defaultChecked />
+              <span>Email Notifications</span>
+            </label>
+            <label className="toggle-label">
+              <input type="checkbox" defaultChecked />
+              <span>In-App Notifications</span>
+            </label>
+            <label className="toggle-label">
+              <input type="checkbox" />
+              <span>SMS Alerts (Important only)</span>
+            </label>
+          </div>
+          <button className="btn-save-prefs" onClick={() => setShowSettings(false)}>
+            Save Preferences
+          </button>
+        </div>
+      )}
+
+      <div className="notifications-controls">
+        <div className="filter-tabs">
+          <button 
+            className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
+            onClick={() => setFilter('all')}
+          >
+            All
+          </button>
+          <button 
+            className={`filter-btn ${filter === 'unread' ? 'active' : ''}`}
+            onClick={() => setFilter('unread')}
+          >
+            Unread {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+          </button>
+        </div>
+
+        {unreadCount > 0 && (
+          <button className="btn-mark-all" onClick={markAllAsRead}>
+            <Check size={16} /> Mark all as read
+          </button>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="admin-loading">Loading notifications...</div>
+      ) : error ? (
+        <div className="admin-error">{error}</div>
+      ) : filteredNotifications.length === 0 ? (
+        <div className="empty-state">
+          <Bell size={48} className="empty-icon text-gray-400" />
+          <h3>No {filter === 'unread' ? 'unread ' : ''}notifications</h3>
+          <p>You're all caught up!</p>
+        </div>
+      ) : (
+        <div className="notifications-list">
+          {filteredNotifications.map(notification => (
+            <div 
+              key={notification.id} 
+              className={`notification-item ${!notification.is_read ? 'unread' : ''}`}
+              onClick={() => markAsRead(notification.id)}
+            >
+              <div className="notification-icon">
+                {getIcon(notification.type)}
+              </div>
+              
+              <div className="notification-content">
+                <div className="notification-header">
+                  <h4>{notification.title}</h4>
+                  <span className="notification-time">
+                    {new Date(notification.created_at).toLocaleString()}
+                  </span>
+                </div>
+                <p>{notification.body}</p>
+              </div>
+
+              {!notification.is_read && (
+                <div className="unread-dot"></div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default NotificationsPage;

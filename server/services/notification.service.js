@@ -57,3 +57,7 @@ const EMAIL_TYPES = new Set([
   'provider_approved', 'provider_rejected', 'nic_approved', 'nic_rejected',
 ]);
 
+/**
+ * Sends the email copy of an in-app notification (US18). Uses the mock transport unless
+ * a real SMTP transport replaces sendEmail. Respects the user's notification preferences.
+ */

@@ -22,3 +22,12 @@ router.get('/stream', async (req, res) => {
   const r = await restriction.checkRestriction(userId);
   if (r.restricted) return res.status(403).json({ error: 'Account restricted', message: 'Account suspended/banned' });
 
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  res.write('retry: 5000\n\n');
+  res.write(`event: ready\ndata: ${JSON.stringify({ userId })}\n\n`);
+

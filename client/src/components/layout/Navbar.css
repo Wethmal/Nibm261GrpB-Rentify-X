@@ -224,3 +224,105 @@
   margin: 0.5rem 0;
 }
 
+.navbar__dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1.25rem;
+  color: var(--color-dark-charcoal);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.navbar__dropdown-item:hover {
+  background-color: rgba(3, 100, 250, 0.04);
+  color: var(--color-primary-blue);
+  text-decoration: none;
+}
+
+.navbar__dropdown-item.logout-btn {
+  color: var(--color-error);
+}
+
+.navbar__dropdown-item.logout-btn:hover {
+  background-color: rgba(220, 53, 69, 0.04);
+  color: var(--color-error);
+}
+
+.navbar__mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--color-dark-charcoal);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+}
+
+/* Mobile Link styles */
+.navbar__links-mobile {
+  display: none;
+}
+
+/* Responsive styles */
+@media (max-width: 900px) {
+  .navbar__links-desktop {
+    display: none;
+  }
+  
+  .navbar__mobile-toggle {
+    display: block;
+  }
+  
+  .navbar__links-mobile {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 70px;
+    left: 0;
+    width: 100%;
+    background-color: var(--color-white);
+    border-bottom: 1px solid var(--color-border);
+    padding: 1rem 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    gap: 1rem;
+    animation: drawer-slide-down 0.25s ease-out;
+  }
+
+  @keyframes drawer-slide-down {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  
+  .navbar__mobile-link {
+    color: var(--color-dark-charcoal);
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.02);
+  }
+  
+  .navbar__mobile-link.active {
+    color: var(--color-primary-blue);
+  }
+  
+  .navbar__mobile-signin {
+    background-color: var(--color-primary-navy);
+    color: var(--color-white);
+    border-radius: 9999px;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    margin-top: 0.5rem;
+  }
+}

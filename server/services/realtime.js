@@ -16,3 +16,5 @@ const removeClient = (userId, res) => {
   if (set.size === 0) clients.delete(userId);
 };
 
+const isOnline = (userId) => clients.has(userId);
+

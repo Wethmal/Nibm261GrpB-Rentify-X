@@ -67,3 +67,32 @@ export function RealtimeProvider({ children }) {
     es.addEventListener('message_read', (e) => emit('message_read', JSON.parse(e.data)));
     es.onerror = () => setConnected(false); // EventSource reconnects on its own
 
+    const onChanged = () => refreshUnread();
+    window.addEventListener('rentify:notifications-changed', onChanged);
+
+    return () => {
+      es.close();
+      window.removeEventListener('rentify:notifications-changed', onChanged);
+      setConnected(false);
+    };
+  }, [isAuthenticated, token, refreshUnread, pushToast]);
+
+  const value = useMemo(
+    () => ({ unreadCount, setUnreadCount, refreshUnread, connected }),
+    [unreadCount, refreshUnread, connected]
+  );
+
+  return (
+    <RealtimeContext.Provider value={value}>
+      {children}
+      <div className="rt-toasts" role="status" aria-live="polite">
+        {toasts.map((t) => (
+          <div key={t.id} className="rt-toast" onClick={() => dismissToast(t.id)}>
+            <strong>{t.title}</strong>
+            <span>{t.body}</span>
+          </div>
+        ))}
+      </div>
+    </RealtimeContext.Provider>
+  );
+}
