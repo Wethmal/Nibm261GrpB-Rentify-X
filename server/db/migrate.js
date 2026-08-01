@@ -3,3 +3,4 @@
  * Usage: `npm run migrate` (applies 18_gap_features.sql) or `node db/migrate.js <file.sql> [...]`.
  * NOTE: runs against whatever DB_* variables are in server/.env — check them first.
  */
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });

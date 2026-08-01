@@ -19,3 +19,6 @@ router.get('/conversations', authenticate, messagingController.getConversations)
 router.get('/:bookingId', authenticate, messagingController.getMessages);
 
 // POST /api/v1/messages/:bookingId — Send a message in a booking conversation
+router.post('/:bookingId', authenticate, messagingController.sendMessage);
+
+module.exports = router;

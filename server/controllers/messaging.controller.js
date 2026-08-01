@@ -77,3 +77,10 @@ const sendMessage = async (req, res, next) => {
       metadata: { bookingId: req.params.bookingId }
     });
 
+    res.status(201).json(message);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getConversations, getMessages, sendMessage };

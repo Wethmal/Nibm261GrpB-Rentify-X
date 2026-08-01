@@ -69,3 +69,4 @@ const markAsRead = async (bookingId, recipientId) => {
   return rows;
 };
 
+module.exports = { findConversationsByUser, findByBookingId, create, markAsRead };

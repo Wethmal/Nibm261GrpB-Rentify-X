@@ -4,3 +4,8 @@
  */
 const clients = new Map(); // userId -> Set<res>
 
+const addClient = (userId, res) => {
+  if (!clients.has(userId)) clients.set(userId, new Set());
+  clients.get(userId).add(res);
+};
+

@@ -24,3 +24,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_cancellation_policy_default ON cancellation
 -- Platform defaults (moderate) per listing type
 INSERT INTO cancellation_policies (listing_type, policy_type, full_refund_hours, partial_refund_hours, partial_refund_percent)
 SELECT 'service', 'moderate', 48, 24, 50
+WHERE NOT EXISTS (SELECT 1 FROM cancellation_policies WHERE listing_id IS NULL AND listing_type = 'service');
+INSERT INTO cancellation_policies (listing_type, policy_type, full_refund_hours, partial_refund_hours, partial_refund_percent)
+SELECT 'equipment', 'moderate', 48, 24, 50
+WHERE NOT EXISTS (SELECT 1 FROM cancellation_policies WHERE listing_id IS NULL AND listing_type = 'equipment');
+
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_by UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP WITH TIME ZONE;
