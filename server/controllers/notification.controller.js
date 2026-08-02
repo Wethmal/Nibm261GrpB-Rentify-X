@@ -50,3 +50,14 @@ const getPreferences = async (req, res, next) => {
   }
 };
 
+const updatePreferences = async (req, res, next) => {
+  try {
+    const updated = await userModel.update(req.user.userId, {
+      notification_preferences: req.body || DEFAULT_PREFERENCES
+    });
+    res.status(200).json(updated?.notification_preferences || req.body || DEFAULT_PREFERENCES);
+  } catch (error) {
+    next(error);
+  }
+};
+

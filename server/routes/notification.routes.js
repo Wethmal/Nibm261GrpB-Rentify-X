@@ -22,3 +22,6 @@ router.put('/:id/read', authenticate, notificationController.markAsRead);
 router.put('/read-all', authenticate, notificationController.markAllAsRead);
 
 // GET /api/v1/notifications/preferences — Get notification preferences
+router.get('/preferences', authenticate, notificationController.getPreferences);
+
+// PUT /api/v1/notifications/preferences — Update notification preferences

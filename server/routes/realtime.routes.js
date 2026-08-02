@@ -35,3 +35,10 @@ router.get('/stream', async (req, res) => {
   // Anything sent while the user was offline is now considered delivered
   query('UPDATE messages SET delivered_at = NOW() WHERE recipient_id = $1 AND delivered_at IS NULL', [userId]).catch(() => {});
 
+  const heartbeat = setInterval(() => { try { res.write(': ping\n\n'); } catch (_) { /* closed */ } }, 25000);
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    realtime.removeClient(userId, res);
+  });
+});
+
