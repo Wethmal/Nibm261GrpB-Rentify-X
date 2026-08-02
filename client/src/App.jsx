@@ -60,3 +60,6 @@ import ListingModerationPage from './pages/admin/ListingModerationPage.jsx';
 import UserManagementPage from './pages/admin/UserManagementPage.jsx';
 import DisputesPage from './pages/admin/DisputesPage.jsx';
 import CategoryManagementPage from './pages/admin/CategoryManagementPage.jsx';
+import ReportsPage from './pages/admin/ReportsPage.jsx';
+
+// --- Shared Pages ---
