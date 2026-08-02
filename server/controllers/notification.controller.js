@@ -41,3 +41,12 @@ const markAllAsRead = async (req, res, next) => {
   }
 };
 
+const getPreferences = async (req, res, next) => {
+  try {
+    const user = await userModel.findById(req.user.userId);
+    res.status(200).json(user?.notification_preferences || DEFAULT_PREFERENCES);
+  } catch (error) {
+    next(error);
+  }
+};
+

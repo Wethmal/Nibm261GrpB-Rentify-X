@@ -31,3 +31,7 @@ router.get('/stream', async (req, res) => {
   res.write('retry: 5000\n\n');
   res.write(`event: ready\ndata: ${JSON.stringify({ userId })}\n\n`);
 
+  realtime.addClient(userId, res);
+  // Anything sent while the user was offline is now considered delivered
+  query('UPDATE messages SET delivered_at = NOW() WHERE recipient_id = $1 AND delivered_at IS NULL', [userId]).catch(() => {});
+

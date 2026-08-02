@@ -18,3 +18,4 @@ const removeClient = (userId, res) => {
 
 const isOnline = (userId) => clients.has(userId);
 
+/** Push an event to every open stream of a user. Returns true if at least one stream received it. */
