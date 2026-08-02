@@ -9,3 +9,24 @@ const addClient = (userId, res) => {
   clients.get(userId).add(res);
 };
 
+const removeClient = (userId, res) => {
+  const set = clients.get(userId);
+  if (!set) return;
+  set.delete(res);
+  if (set.size === 0) clients.delete(userId);
+};
+
+const isOnline = (userId) => clients.has(userId);
+
+/** Push an event to every open stream of a user. Returns true if at least one stream received it. */
+const publish = (userId, event, data) => {
+  const set = clients.get(userId);
+  if (!set || set.size === 0) return false;
+  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const res of set) {
+    try { res.write(payload); } catch (_) { /* dropped connection is cleaned up on close */ }
+  }
+  return true;
+};
+
+module.exports = { addClient, removeClient, publish, isOnline };

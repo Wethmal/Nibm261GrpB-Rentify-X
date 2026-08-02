@@ -40,3 +40,42 @@ const sendSMS = async (toMobile, message) => {
   return true;
 };
 
+const notify = async (userId, event, data = {}) => {
+  // Currently, we only dispatch in-app notifications
+  try {
+    await sendInApp(userId, event, data.title || 'Notification', data.body || '', data.metadata || {});
+    return true;
+  } catch (err) {
+    console.error('Failed to dispatch notification:', err);
+    return false;
+  }
+};
+
+const EMAIL_TYPES = new Set([
+  'new_booking_request', 'booking_accepted', 'booking_rejected', 'booking_cancelled',
+  'booking_completed', 'booking_confirmed', 'moderation_notice', 'report_update',
+  'provider_approved', 'provider_rejected', 'nic_approved', 'nic_rejected',
+]);
+
+/**
+ * Sends the email copy of an in-app notification (US18). Uses the mock transport unless
+ * a real SMTP transport replaces sendEmail. Respects the user's notification preferences.
+ */
+const deliverExternal = (notification) => {
+  if (!EMAIL_TYPES.has(notification.type)) return;
+  setImmediate(async () => {
+    try {
+      const { query } = require('../config/db');
+      const { rows } = await query('SELECT email, notification_preferences FROM users WHERE id = $1', [notification.user_id]);
+      const u = rows[0];
+      if (!u || !u.email) return;
+      const prefs = u.notification_preferences || {};
+      if (prefs.email === false) return;
+      await sendEmail(u.email, `Rentify: ${notification.title}`, `<p>${notification.body}</p>`);
+    } catch (err) {
+      console.error('Email delivery failed:', err.message);
+    }
+  });
+};
+
+module.exports = { sendInApp, sendEmail, sendSMS, notify, deliverExternal };
