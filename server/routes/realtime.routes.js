@@ -42,3 +42,4 @@ router.get('/stream', async (req, res) => {
   });
 });
 
+module.exports = router;

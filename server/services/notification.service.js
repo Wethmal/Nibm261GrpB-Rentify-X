@@ -78,3 +78,4 @@ const deliverExternal = (notification) => {
   });
 };
 
+module.exports = { sendInApp, sendEmail, sendSMS, notify, deliverExternal };

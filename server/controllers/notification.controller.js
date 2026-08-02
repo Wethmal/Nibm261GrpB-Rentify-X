@@ -61,3 +61,4 @@ const updatePreferences = async (req, res, next) => {
   }
 };
 
+module.exports = { getAll, markAsRead, markAllAsRead, getPreferences, updatePreferences };

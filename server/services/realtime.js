@@ -29,3 +29,4 @@ const publish = (userId, event, data) => {
   return true;
 };
 
+module.exports = { addClient, removeClient, publish, isOnline };

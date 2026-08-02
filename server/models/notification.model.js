@@ -53,3 +53,4 @@ const markAllAsRead = async (userId) => {
   return result.rows;
 };
 
+module.exports = { findByUserId, create, markAsRead, markAllAsRead };
