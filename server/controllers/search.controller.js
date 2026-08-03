@@ -97,3 +97,27 @@ const search = async (req, res, next) => {
       LIMIT $${values.length + 1} OFFSET $${values.length + 2}
     `;
 
+    const fetchValues = [...values, limit, offset];
+    const fetchResult = await query(fetchSql, fetchValues);
+
+    res.status(200).json({
+      results: fetchResult.rows,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getCategories = async (req, res, next) => {
+  try {
+    const result = await query('SELECT * FROM categories ORDER BY name ASC');
+    res.status(200).json(result.rows);
+  } catch (error) {
+    next(error);
+  }
+};
+

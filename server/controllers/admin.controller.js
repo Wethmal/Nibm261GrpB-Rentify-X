@@ -196,3 +196,36 @@ const banUser = async (req, res, next) => {
   }
 };
 
+const suspendUser = async (req, res, next) => {
+  try {
+    if (req.params.id === req.user.userId) {
+      return res.status(400).json({ error: 'Bad Request', message: 'You cannot suspend your own account' });
+    }
+    const reason = String(req.body.reason || '').trim() || 'Suspended by admin';
+    const days = req.body.days === undefined ? 7 : req.body.days;
+    let user;
+    try { user = await restriction.suspend(req.params.id, days, reason); }
+    catch (e) { return res.status(e.status || 500).json({ error: 'Bad Request', message: e.message }); }
+    if (!user) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    await audit.record(req.user.userId, 'user_suspended', 'user', req.params.id, { reason, days: Number(days) });
+    await notificationModel.create({
+      user_id: req.params.id, type: 'moderation_notice', title: 'Account suspended',
+      body: `Your account is suspended for ${Number(days)} day(s): ${reason}`, metadata: {}
+    });
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const reinstateUser = async (req, res, next) => {
+  try {
+    const user = await restriction.reinstate(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    await audit.record(req.user.userId, 'user_reinstated', 'user', req.params.id, {});
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
