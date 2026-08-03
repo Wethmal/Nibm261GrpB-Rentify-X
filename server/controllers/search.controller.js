@@ -135,3 +135,37 @@ const searchNearby = async (req, res, next) => {
       return res.status(400).json({ error: 'Bad Request', message: 'Radius must be a positive number' });
     }
 
+    const sql = `
+      SELECT l.*, 
+             c.name AS category_name, 
+             u.full_name AS provider_name,
+             (6371 * acos(
+                 LEAST(1.0, GREATEST(-1.0, 
+                     cos(radians($1)) * cos(radians(l.geo_lat)) * cos(radians(l.geo_lng) - radians($2)) +
+                     sin(radians($1)) * sin(radians(l.geo_lat))
+                 ))
+             )) AS distance
+      FROM listings l
+      LEFT JOIN categories c ON l.category_id = c.id
+      LEFT JOIN users u ON l.provider_id = u.id
+      WHERE l.status = 'active' 
+        AND NOT EXISTS (SELECT 1 FROM users ru WHERE ru.id = l.provider_id AND ru.status IN ('banned', 'suspended'))
+        AND l.geo_lat IS NOT NULL 
+        AND l.geo_lng IS NOT NULL
+        AND (6371 * acos(
+            LEAST(1.0, GREATEST(-1.0, 
+                cos(radians($1)) * cos(radians(l.geo_lat)) * cos(radians(l.geo_lng) - radians($2)) +
+                sin(radians($1)) * sin(radians(l.geo_lat))
+            ))
+        )) <= $3
+      ORDER BY distance ASC
+      LIMIT 100
+    `;
+
+    const result = await query(sql, [lat, lng, radius]);
+
+    const formattedResults = result.rows.map(row => ({
+      ...row,
+      distance: parseFloat(row.distance)
+    }));
+

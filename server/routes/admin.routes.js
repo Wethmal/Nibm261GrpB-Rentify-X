@@ -44,3 +44,4 @@ router.post('/categories', adminController.createCategory);
 router.put('/categories/:id', adminController.updateCategory);
 router.delete('/categories/:id', adminController.deleteCategory);
 
+// --- Disputes ---

@@ -245,3 +245,16 @@ const getUserDetail = async (req, res, next) => {
   }
 };
 
+const getNICVerificationDetail = async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, email, mobile, full_name, role, status, district, address, nic_number, nic_document_url,
+              nic_review_note, nic_reviewed_at, created_at
+       FROM users WHERE id = $1 AND is_deleted = false`, [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    res.status(200).json({ verification: rows[0] });
+  } catch (error) {
+    next(error);
+  }
+};
+
