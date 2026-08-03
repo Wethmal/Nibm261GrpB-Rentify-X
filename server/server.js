@@ -97,3 +97,5 @@ app.get('/api/v1/health', (req, res) => {
 // --- Mount API Routes ---
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/listings', listingRoutes);
+app.use('/api/v1/bookings', bookingRoutes);

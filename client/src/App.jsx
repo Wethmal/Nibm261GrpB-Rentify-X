@@ -65,3 +65,5 @@ import ReportsPage from './pages/admin/ReportsPage.jsx';
 // --- Shared Pages ---
 import ProfilePage from './pages/shared/ProfilePage.jsx';
 import MessagingPage from './pages/shared/MessagingPage.jsx';
+import NotificationsPage from './pages/shared/NotificationsPage.jsx';
+

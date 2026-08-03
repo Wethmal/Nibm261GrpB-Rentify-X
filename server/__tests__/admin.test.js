@@ -10,3 +10,9 @@ const request = require('supertest');
 const app = require('../server');
 const jwt = require('jsonwebtoken');
 
+describe('Admin Endpoints RBAC', () => {
+  it('should reject access without a token', async () => {
+    const res = await request(app).get('/api/v1/admin/analytics');
+    expect(res.statusCode).toEqual(401);
+  });
+

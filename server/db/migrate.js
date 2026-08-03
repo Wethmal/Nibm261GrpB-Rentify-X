@@ -4,3 +4,4 @@
  * NOTE: runs against whatever DB_* variables are in server/.env — check them first.
  */
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+const fs = require('fs');
