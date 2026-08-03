@@ -26,3 +26,6 @@ router.get('/', listingController.getAll);
 router.get('/:id', listingController.getById);
 
 // POST /api/v1/listings — Create a new listing (provider only)
+router.post('/', authenticate, authorize('provider'), listingController.create);
+
+// POST /api/v1/listings/:id/photos — Upload multiple photos (provider only, max 10)

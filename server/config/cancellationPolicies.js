@@ -10,3 +10,5 @@ const PRESETS = {
   non_refundable: { full_refund_hours: 100000, partial_refund_hours: 100000, partial_refund_percent: 0 },
 };
 
+const POLICY_TYPES = Object.keys(PRESETS);
+

@@ -57,3 +57,38 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
 import ProviderApprovalPage from './pages/admin/ProviderApprovalPage.jsx';
 import NICVerificationPage from './pages/admin/NICVerificationPage.jsx';
 import ListingModerationPage from './pages/admin/ListingModerationPage.jsx';
+import UserManagementPage from './pages/admin/UserManagementPage.jsx';
+import DisputesPage from './pages/admin/DisputesPage.jsx';
+import CategoryManagementPage from './pages/admin/CategoryManagementPage.jsx';
+import ReportsPage from './pages/admin/ReportsPage.jsx';
+
+// --- Shared Pages ---
+import ProfilePage from './pages/shared/ProfilePage.jsx';
+import MessagingPage from './pages/shared/MessagingPage.jsx';
+import NotificationsPage from './pages/shared/NotificationsPage.jsx';
+
+// --- Error Pages ---
+import NotFoundPage from './pages/errors/NotFoundPage.jsx';
+import UnauthorizedPage from './pages/errors/UnauthorizedPage.jsx';
+
+function App() {
+  return (
+    <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <Navbar />
+
+      <main className="app__content" style={{ flex: 1 }}>
+        <Routes>
+          {/* ======================== Public Routes ======================== */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/listings/:id" element={<ListingDetailPage />} />
+          <Route path="/providers/:id" element={<ProviderProfilePage />} />
+
+          {/* =================== Authenticated Routes ==================== */}
+          {/* Consumer */}
+          <Route path="/bookings" element={<ProtectedRoute><BookingHistoryPage /></ProtectedRoute>} />
+          <Route path="/bundle-booking" element={<ProtectedRoute allowedRoles={['consumer']}><BundleBookingPage /></ProtectedRoute>} />
+

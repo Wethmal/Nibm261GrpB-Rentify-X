@@ -279,3 +279,60 @@ function BookingHistoryPage() {
             const targetListingId = booking.service_listing_id || booking.equipment_listing_id || booking.listing_id;
             const durationText = booking.duration || `${booking.duration_hours} hours`;
 
+            return (
+              <div key={booking.id} className="booking-card" data-testid={`booking-card-${booking.id}`}>
+                <div className="booking-card__image-container">
+                  <img src={photo} alt={title} className="booking-card__image" />
+                  <span className={`booking-card__badge ${getStatusBadgeClass(booking.status)}`}>
+                    {booking.status}
+                  </span>
+                </div>
+
+                <div className="booking-card__content">
+                  <div className="booking-card__header">
+                    <h3 className="booking-card__title">{title}</h3>
+                    <span className="booking-card__price">{formatCurrency(booking.total_price)}</span>
+                  </div>
+
+                  <p className="booking-card__provider">
+                    Provider: <strong>{providerName}</strong>
+                  </p>
+
+                  {/* Timeline info row */}
+                  <div className="booking-card__timeline">
+                    <div className="timeline-item">
+                      <Calendar size={14} />
+                      <span>{booking.scheduled_date}</span>
+                    </div>
+                    <div className="timeline-item">
+                      <Clock size={14} />
+                      <span>{booking.scheduled_time}</span>
+                    </div>
+                    <div className="timeline-item">
+                      <MapPin size={14} />
+                      <span>{district} ({durationText})</span>
+                    </div>
+                  </div>
+
+                  {booking.notes && (
+                    <p className="booking-card__notes">
+                      <span className="notes-label">Notes:</span> "{booking.notes}"
+                    </p>
+                  )}
+
+                  {renderCardTimeline(booking.status)}
+
+                  {/* Contextual actions */}
+                  <div className="booking-card__actions">
+                    <Link to={targetListingId ? `/listings/${targetListingId}` : '#'} className="btn-details">
+                      View Listing
+                      <ArrowRight size={14} />
+                    </Link>
+
+                    {booking.status === 'completed' && (
+                      <button className="btn-review" onClick={() => setReviewTarget(booking)}>
+                        <Star size={14} style={{ marginRight: '4px' }} />
+                        Leave a Review
+                      </button>
+                    )}
+
