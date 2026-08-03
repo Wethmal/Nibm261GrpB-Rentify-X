@@ -51,3 +51,4 @@ router.put('/disputes/:id/resolve', adminController.resolveDispute);
 // --- Analytics ---
 router.get('/analytics', adminController.getAnalytics);
 
+// --- Reported users & audit log ---
