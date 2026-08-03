@@ -258,3 +258,39 @@ const getNICVerificationDetail = async (req, res, next) => {
   }
 };
 
+const decideNICVerification = async (req, res, next) => {
+  try {
+    const { decision } = req.body;
+    const note = String(req.body.note || '').trim();
+    if (!['approve', 'reject'].includes(decision)) {
+      return res.status(400).json({ error: 'Bad Request', message: "decision must be 'approve' or 'reject'" });
+    }
+    if (note.length < 3) {
+      return res.status(400).json({ error: 'Bad Request', message: 'A review note is required' });
+    }
+    const approve = decision === 'approve';
+    // Approve -> verified. Reject -> stay pending but clear the document so the user can re-upload.
+    const { rows } = await query(
+      `UPDATE users
+       SET status = CASE WHEN $2 THEN 'verified' ELSE status END,
+           nic_document_url = CASE WHEN $2 THEN nic_document_url ELSE NULL END,
+           nic_review_note = $3, nic_reviewed_at = NOW(), updated_at = NOW()
+       WHERE id = $1 AND is_deleted = false
+       RETURNING id, email, full_name, status, nic_review_note`,
+      [req.params.id, approve, note]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    await audit.record(req.user.userId, approve ? 'nic_approved' : 'nic_rejected', 'user', req.params.id, { note });
+    await notificationModel.create({
+      user_id: req.params.id,
+      type: approve ? 'nic_approved' : 'nic_rejected',
+      title: approve ? 'Identity verified' : 'Identity verification rejected',
+      body: approve ? 'Your NIC was verified. Your account is now trusted.' : `Your NIC upload was rejected: ${note}. Please upload a clearer document.`,
+      metadata: { note }
+    });
+    res.status(200).json({ user: rows[0] });
+  } catch (error) {
+    next(error);
+  }
+};
+

@@ -45,3 +45,6 @@ router.put('/categories/:id', adminController.updateCategory);
 router.delete('/categories/:id', adminController.deleteCategory);
 
 // --- Disputes ---
+router.get('/disputes', adminController.getDisputes);
+router.put('/disputes/:id/resolve', adminController.resolveDispute);
+

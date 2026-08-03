@@ -169,3 +169,13 @@ const searchNearby = async (req, res, next) => {
       distance: parseFloat(row.distance)
     }));
 
+    res.status(200).json({
+      results: formattedResults,
+      total: formattedResults.length
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { search, getCategories, searchNearby };
