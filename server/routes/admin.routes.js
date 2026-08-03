@@ -41,3 +41,6 @@ router.put('/users/:id/reinstate', adminController.reinstateUser);
 // --- Categories ---
 router.get('/categories', adminController.getCategories);
 router.post('/categories', adminController.createCategory);
+router.put('/categories/:id', adminController.updateCategory);
+router.delete('/categories/:id', adminController.deleteCategory);
+

@@ -121,3 +121,17 @@ const getCategories = async (req, res, next) => {
   }
 };
 
+const searchNearby = async (req, res, next) => {
+  try {
+    const lat = parseFloat(req.query.lat || req.query.latitude);
+    const lng = parseFloat(req.query.lng || req.query.longitude);
+    const radius = parseFloat(req.query.radius || req.query.distance || 50);
+
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Latitude and longitude are required and must be valid coordinates' });
+    }
+
+    if (isNaN(radius) || radius <= 0) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Radius must be a positive number' });
+    }
+
