@@ -60,3 +60,19 @@ import ListingModerationPage from './pages/admin/ListingModerationPage.jsx';
 import UserManagementPage from './pages/admin/UserManagementPage.jsx';
 import DisputesPage from './pages/admin/DisputesPage.jsx';
 import CategoryManagementPage from './pages/admin/CategoryManagementPage.jsx';
+import ReportsPage from './pages/admin/ReportsPage.jsx';
+
+// --- Shared Pages ---
+import ProfilePage from './pages/shared/ProfilePage.jsx';
+import MessagingPage from './pages/shared/MessagingPage.jsx';
+import NotificationsPage from './pages/shared/NotificationsPage.jsx';
+
+// --- Error Pages ---
+import NotFoundPage from './pages/errors/NotFoundPage.jsx';
+import UnauthorizedPage from './pages/errors/UnauthorizedPage.jsx';
+
+function App() {
+  return (
+    <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <Navbar />
+
