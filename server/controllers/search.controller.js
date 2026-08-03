@@ -77,3 +77,23 @@ const search = async (req, res, next) => {
       orderBy = `ORDER BY similarity(l.title, $${rawIndex}) DESC, similarity(l.description, $${rawIndex}) DESC`;
     }
 
+    const whereClause = whereParts.length > 0 ? 'WHERE ' + whereParts.join(' AND ') : '';
+
+    // 1. Get total matching count
+    const countSql = `SELECT COUNT(*) FROM listings l ${whereClause}`;
+    const countResult = await query(countSql, values);
+    const total = parseInt(countResult.rows[0].count, 10);
+
+    // 2. Fetch paginated records with joins
+    const fetchSql = `
+      SELECT l.*, 
+             c.name AS category_name, 
+             u.full_name AS provider_name
+      FROM listings l
+      LEFT JOIN categories c ON l.category_id = c.id
+      LEFT JOIN users u ON l.provider_id = u.id
+      ${whereClause}
+      ${orderBy}
+      LIMIT $${values.length + 1} OFFSET $${values.length + 2}
+    `;
+
