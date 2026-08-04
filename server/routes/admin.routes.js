@@ -58,3 +58,4 @@ router.get('/reports/:id', reportController.getReport);
 router.put('/reports/:id/resolve', reportController.resolveReport);
 router.get('/audit-logs', reportController.listAuditLogs);
 
+module.exports = router;

@@ -53,3 +53,43 @@ const submitReport = async (req, res, next) => {
       return res.status(409).json({ error: 'Conflict', message: 'You already have an open report against this user' });
     }
 
+    let bookingRef = null;
+    if (bookingId) {
+      const b = await query(
+        'SELECT id FROM bookings WHERE id = $1 AND ((consumer_id = $2 AND provider_id = $3) OR (consumer_id = $3 AND provider_id = $2))',
+        [bookingId, reporterId, reportedId]
+      );
+      if (!b.rows[0]) return res.status(400).json({ error: 'Bad Request', message: 'bookingId does not link you with this user' });
+      bookingRef = b.rows[0].id;
+    }
+
+    const { rows } = await query(
+      `INSERT INTO user_reports (reporter_id, reported_user_id, booking_id, reason, description)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id, status, reason, created_at`,
+      [reporterId, reportedId, bookingRef, reason, text]
+    );
+    res.status(201).json({ message: 'Report submitted. Our team will review it.', report: rows[0] });
+
+    // Alert admins once a user has accumulated several pending reports
+    setImmediate(async () => {
+      try {
+        const pending = await query("SELECT COUNT(*)::int AS c FROM user_reports WHERE reported_user_id = $1 AND status = 'pending'", [reportedId]);
+        if (pending.rows[0].c >= ADMIN_ALERT_THRESHOLD) {
+          const admins = await query("SELECT id, email FROM users WHERE role = 'admin' AND is_deleted = false");
+          for (const a of admins.rows) {
+            await notificationService.sendEmail(a.email, 'Rentify: user has multiple pending reports',
+              `<p>${target.rows[0].full_name || reportedId} now has ${pending.rows[0].c} pending reports.</p>`);
+            await notifySafe({
+              user_id: a.id, type: 'report_threshold', title: 'Multiple reports against a user',
+              body: `${target.rows[0].full_name || 'A user'} has ${pending.rows[0].c} pending reports.`,
+              metadata: { reportedUserId: reportedId },
+            });
+          }
+        }
+      } catch (e) { console.error('report threshold alert failed:', e.message); }
+    });
+  } catch (error) { next(error); }
+};
+
+// ---------- Admin ----------
+
