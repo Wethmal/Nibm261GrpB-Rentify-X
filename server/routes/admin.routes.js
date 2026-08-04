@@ -55,3 +55,6 @@ router.get('/analytics', adminController.getAnalytics);
 const reportController = require('../controllers/report.controller');
 router.get('/reports', reportController.listReports);
 router.get('/reports/:id', reportController.getReport);
+router.put('/reports/:id/resolve', reportController.resolveReport);
+router.get('/audit-logs', reportController.listAuditLogs);
+

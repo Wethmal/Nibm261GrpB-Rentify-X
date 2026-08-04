@@ -34,3 +34,22 @@ const submitReport = async (req, res, next) => {
       return res.status(400).json({ error: 'Bad Request', message: `Please describe the problem in at least ${MIN_DESCRIPTION} characters` });
     }
 
+    const target = await query("SELECT id, full_name FROM users WHERE id = $1 AND is_deleted = false AND role <> 'admin'", [reportedId]);
+    if (!target.rows[0]) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+
+    const today = await query(
+      "SELECT COUNT(*)::int AS c FROM user_reports WHERE reporter_id = $1 AND created_at >= NOW() - INTERVAL '24 hours'",
+      [reporterId]
+    );
+    if (today.rows[0].c >= DAILY_LIMIT) {
+      return res.status(429).json({ error: 'Too Many Requests', message: `You can submit at most ${DAILY_LIMIT} reports per day` });
+    }
+
+    const dup = await query(
+      "SELECT 1 FROM user_reports WHERE reporter_id = $1 AND reported_user_id = $2 AND status IN ('pending','reviewing')",
+      [reporterId, reportedId]
+    );
+    if (dup.rowCount > 0) {
+      return res.status(409).json({ error: 'Conflict', message: 'You already have an open report against this user' });
+    }
+
