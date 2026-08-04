@@ -52,3 +52,5 @@ router.put('/disputes/:id/resolve', adminController.resolveDispute);
 router.get('/analytics', adminController.getAnalytics);
 
 // --- Reported users & audit log ---
+const reportController = require('../controllers/report.controller');
+router.get('/reports', reportController.listReports);
