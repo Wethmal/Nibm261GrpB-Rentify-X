@@ -57,3 +57,15 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
 import ProviderApprovalPage from './pages/admin/ProviderApprovalPage.jsx';
 import NICVerificationPage from './pages/admin/NICVerificationPage.jsx';
 import ListingModerationPage from './pages/admin/ListingModerationPage.jsx';
+import UserManagementPage from './pages/admin/UserManagementPage.jsx';
+import DisputesPage from './pages/admin/DisputesPage.jsx';
+import CategoryManagementPage from './pages/admin/CategoryManagementPage.jsx';
+import ReportsPage from './pages/admin/ReportsPage.jsx';
+
+// --- Shared Pages ---
+import ProfilePage from './pages/shared/ProfilePage.jsx';
+import MessagingPage from './pages/shared/MessagingPage.jsx';
+import NotificationsPage from './pages/shared/NotificationsPage.jsx';
+
+// --- Error Pages ---
+import NotFoundPage from './pages/errors/NotFoundPage.jsx';
