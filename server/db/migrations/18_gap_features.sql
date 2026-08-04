@@ -24,3 +24,37 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_cancellation_policy_default ON cancellation
 -- Platform defaults (moderate) per listing type
 INSERT INTO cancellation_policies (listing_type, policy_type, full_refund_hours, partial_refund_hours, partial_refund_percent)
 SELECT 'service', 'moderate', 48, 24, 50
+WHERE NOT EXISTS (SELECT 1 FROM cancellation_policies WHERE listing_id IS NULL AND listing_type = 'service');
+INSERT INTO cancellation_policies (listing_type, policy_type, full_refund_hours, partial_refund_hours, partial_refund_percent)
+SELECT 'equipment', 'moderate', 48, 24, 50
+WHERE NOT EXISTS (SELECT 1 FROM cancellation_policies WHERE listing_id IS NULL AND listing_type = 'equipment');
+
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_by UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancellation_reason TEXT;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_amount NUMERIC(10, 2);
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_percent INT;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payout_status VARCHAR(20);
+
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS refund_amount NUMERIC(10, 2) DEFAULT 0.00;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS refund_reason TEXT;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMP WITH TIME ZONE;
+
+-- ---------- Provider payouts (US27) ----------
+CREATE TABLE IF NOT EXISTS provider_payouts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    provider_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    gross_amount NUMERIC(10, 2) NOT NULL,
+    platform_fee NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    net_amount NUMERIC(10, 2) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'paid', 'failed')),
+    paid_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (booking_id)
+);
+CREATE INDEX IF NOT EXISTS idx_provider_payouts_provider ON provider_payouts(provider_id, status);
+CREATE INDEX IF NOT EXISTS idx_provider_payouts_created ON provider_payouts(created_at);
+
+-- ---------- User reports (US29 / US23) ----------
