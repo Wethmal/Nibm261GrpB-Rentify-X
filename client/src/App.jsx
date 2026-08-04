@@ -67,3 +67,5 @@ import ProfilePage from './pages/shared/ProfilePage.jsx';
 import MessagingPage from './pages/shared/MessagingPage.jsx';
 import NotificationsPage from './pages/shared/NotificationsPage.jsx';
 
+// --- Error Pages ---
+import NotFoundPage from './pages/errors/NotFoundPage.jsx';

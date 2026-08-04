@@ -48,3 +48,14 @@ router.delete('/categories/:id', adminController.deleteCategory);
 router.get('/disputes', adminController.getDisputes);
 router.put('/disputes/:id/resolve', adminController.resolveDispute);
 
+// --- Analytics ---
+router.get('/analytics', adminController.getAnalytics);
+
+// --- Reported users & audit log ---
+const reportController = require('../controllers/report.controller');
+router.get('/reports', reportController.listReports);
+router.get('/reports/:id', reportController.getReport);
+router.put('/reports/:id/resolve', reportController.resolveReport);
+router.get('/audit-logs', reportController.listAuditLogs);
+
+module.exports = router;
