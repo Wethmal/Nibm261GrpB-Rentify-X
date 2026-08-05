@@ -29,3 +29,6 @@ router.get('/:id', listingController.getById);
 router.post('/', authenticate, authorize('provider'), listingController.create);
 
 // POST /api/v1/listings/:id/photos — Upload multiple photos (provider only, max 10)
+router.post('/:id/photos', authenticate, authorize('provider'), upload.array('photos'), listingController.uploadPhotos);
+
+// PUT /api/v1/listings/:id — Update a listing (provider owner only)

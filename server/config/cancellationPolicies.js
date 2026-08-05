@@ -12,3 +12,4 @@ const PRESETS = {
 
 const POLICY_TYPES = Object.keys(PRESETS);
 
+/** Build the start Date of a booking from its DATE and TIME columns. */

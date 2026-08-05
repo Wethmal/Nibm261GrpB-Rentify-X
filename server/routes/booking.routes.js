@@ -29,3 +29,5 @@ router.put('/:id/accept', authenticate, bookingController.accept);
 router.put('/:id/reject', authenticate, bookingController.reject);
 
 // PUT /api/v1/bookings/:id/cancel — Cancel a booking (consumer or provider)
+router.put('/:id/cancel', authenticate, cancellation.cancelAny);
+
