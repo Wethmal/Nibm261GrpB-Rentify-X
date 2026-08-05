@@ -393,3 +393,18 @@ const getAnalytics = async (req, res, next) => {
       query("SELECT COUNT(*)::int AS count FROM users WHERE is_deleted = false AND status = 'verified'")
     ]);
 
+    res.status(200).json({
+      usersByRole: users.rows,
+      listingsByType: listings.rows,
+      bookingsByStatus: bookings.rows,
+      totalRevenue: revenue.rows[0].total,
+      pendingProviders: pendingProviders.rows[0].count,
+      pendingListings: pendingListings.rows[0].count,
+      bookingsLast30Days: growth.rows,
+      activeUsers: activeUsers.rows[0].count
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

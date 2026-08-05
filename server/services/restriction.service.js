@@ -50,3 +50,22 @@ const reinstate = async (userId) => {
  * Returns { restricted, status, reason, until } for a user id, lifting expired suspensions.
  * Fails open (restricted: false) on unexpected DB errors so an outage does not lock everyone out.
  */
+const checkRestriction = async (userId) => {
+  try {
+    const { rows } = await query('SELECT status, status_reason, suspended_until FROM users WHERE id = $1', [userId]);
+    const u = rows[0];
+    if (!u) return { restricted: false };
+    if (u.status === 'banned') return { restricted: true, status: 'banned', reason: u.status_reason };
+    if (u.status === 'suspended') {
+      if (u.suspended_until && new Date(u.suspended_until) <= new Date()) {
+        await reinstate(userId);
+        return { restricted: false };
+      }
+      return { restricted: true, status: 'suspended', reason: u.status_reason, until: u.suspended_until };
+    }
+    return { restricted: false };
+  } catch (err) {
+    return { restricted: false };
+  }
+};
+
