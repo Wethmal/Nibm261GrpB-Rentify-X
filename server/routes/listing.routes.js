@@ -37,3 +37,6 @@ router.put('/:id', authenticate, authorize('provider'), listingController.update
 // DELETE /api/v1/listings/:id — Soft-delete a listing (provider owner only)
 router.delete('/:id', authenticate, authorize('provider'), listingController.remove);
 
+// GET /api/v1/listings/:id/availability — Get availability for a listing
+router.get('/:id/availability', listingController.getAvailability);
+

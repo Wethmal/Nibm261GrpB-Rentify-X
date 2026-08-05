@@ -67,3 +67,48 @@ const loadBookingContext = async (bookingId) => {
 
 const cancellable = (b) => ['pending', 'confirmed'].includes(b.status);
 
+const getPreview = async (req, res, next) => {
+  try {
+    const { booking, listing } = await loadBookingContext(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    if (booking.consumer_id !== req.user.userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only the booking consumer can preview a cancellation' });
+    }
+    if (!cancellable(booking)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Only pending or confirmed bookings can be cancelled' });
+    }
+    const policy = await resolvePolicy(listing);
+    const calc = calculateRefund(booking, policy);
+    res.status(200).json({
+      bookingId: booking.id,
+      totalPaid: Number(booking.total_price),
+      refundPercent: calc.refundPercent,
+      refundAmount: calc.refundAmount,
+      hoursBeforeStart: Math.round(calc.hoursBeforeStart * 10) / 10,
+      policy: fmt(policy),
+    });
+  } catch (error) { next(error); }
+};
+
+const applyCancellation = async ({ booking, actorId, providerFault, calc, reason }) => {
+  const updated = await query(
+    `UPDATE bookings
+     SET status = 'cancelled', cancelled_by = $2, cancelled_at = NOW(), cancellation_reason = $3,
+         refund_amount = $4, refund_percent = $5, updated_at = NOW()
+     WHERE id = $1 RETURNING *`,
+    [booking.id, actorId, reason || null, calc.refundAmount, calc.refundPercent]
+  );
+
+  const pay = await query('SELECT * FROM payments WHERE booking_id = $1 ORDER BY created_at DESC LIMIT 1', [booking.id]);
+  const payment = pay.rows[0];
+  if (payment && payment.status === 'escrowed' && calc.refundAmount > 0) {
+    await paymentService.processRefund(payment.id, calc.refundAmount, providerFault ? 'provider_cancelled' : 'consumer_cancelled');
+  }
+  // Provider keeps whatever was not refunded (late consumer cancellation)
+  const retained = Number(booking.total_price) - calc.refundAmount;
+  if (!providerFault && payment && payment.status === 'escrowed' && retained > 0) {
+    await payoutService.createForBooking(updated.rows[0], retained);
+  }
+  return updated.rows[0];
+};
+

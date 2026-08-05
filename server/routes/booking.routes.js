@@ -34,3 +34,6 @@ router.put('/:id/cancel', authenticate, cancellation.cancelAny);
 // POST /api/v1/bookings/:id/cancel — Consumer cancellation with policy-based refund
 router.post('/:id/cancel', authenticate, cancellation.cancelByConsumer);
 
+// POST /api/v1/bookings/:id/cancel-by-provider — Provider cancellation (always full refund)
+router.post('/:id/cancel-by-provider', authenticate, cancellation.cancelByProvider);
+

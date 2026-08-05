@@ -21,3 +21,11 @@ const bookingStart = (booking) => {
   return new Date(`${d}T${t.length === 5 ? `${t}:00` : t}`);
 };
 
+/**
+ * @returns {{refundPercent:number, refundAmount:number, hoursBeforeStart:number}}
+ */
+const calculateRefund = (booking, policy, providerFault = false, now = new Date()) => {
+  const total = Number(booking.total_price) || 0;
+  const hoursBeforeStart = (bookingStart(booking).getTime() - now.getTime()) / 3600000;
+  if (providerFault) return { refundPercent: 100, refundAmount: total, hoursBeforeStart };
+
