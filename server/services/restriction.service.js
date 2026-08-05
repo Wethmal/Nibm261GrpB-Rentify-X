@@ -23,3 +23,26 @@ const suspend = async (userId, days, reason) => {
   return rows[0] || null;
 };
 
+const ban = async (userId, reason) => {
+  const { rows } = await query(
+    `UPDATE users
+     SET status = 'banned', status_reason = $2, suspended_until = NULL, banned_at = NOW(), updated_at = NOW()
+     WHERE id = $1 AND is_deleted = false
+     RETURNING id, email, full_name, status, status_reason, banned_at`,
+    [userId, reason || 'Banned by admin']
+  );
+  if (rows[0]) await refreshModel.revokeAllForUser(userId);
+  return rows[0] || null;
+};
+
+const reinstate = async (userId) => {
+  const { rows } = await query(
+    `UPDATE users
+     SET status = 'verified', status_reason = NULL, suspended_until = NULL, banned_at = NULL, updated_at = NOW()
+     WHERE id = $1 AND is_deleted = false
+     RETURNING id, email, full_name, status`,
+    [userId]
+  );
+  return rows[0] || null;
+};
+

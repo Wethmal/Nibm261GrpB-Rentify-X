@@ -343,3 +343,37 @@ const deleteCategory = async (req, res, next) => {
   }
 };
 
+const getDisputes = async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT b.*, c.full_name AS consumer_name, p.full_name AS provider_name
+       FROM bookings b
+       JOIN users c ON c.id = b.consumer_id
+       JOIN users p ON p.id = b.provider_id
+       WHERE b.status = 'disputed'
+       ORDER BY b.updated_at DESC`
+    );
+    res.status(200).json({ disputes: rows });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resolveDispute = async (req, res, next) => {
+  try {
+    const status = req.body.status || 'completed';
+    const allowed = ['completed', 'cancelled', 'rejected'];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Invalid dispute resolution status' });
+    }
+    const { rows } = await query(
+      'UPDATE bookings SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [status, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Not Found', message: 'Dispute not found' });
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    next(error);
+  }
+};
+
