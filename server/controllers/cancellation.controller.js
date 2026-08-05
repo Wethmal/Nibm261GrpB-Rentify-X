@@ -112,3 +112,34 @@ const applyCancellation = async ({ booking, actorId, providerFault, calc, reason
   return updated.rows[0];
 };
 
+const notifySafe = (data) =>
+  notificationModel.create(data).catch((e) => console.error('cancel notification failed:', e.message));
+
+const cancelByConsumer = async (req, res, next) => {
+  try {
+    const { booking, listing } = await loadBookingContext(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    if (booking.consumer_id !== req.user.userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'You can only cancel your own bookings' });
+    }
+    if (!cancellable(booking)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Can only cancel pending or confirmed bookings' });
+    }
+    const policy = await resolvePolicy(listing);
+    const calc = calculateRefund(booking, policy);
+    const updated = await applyCancellation({ booking, actorId: req.user.userId, providerFault: false, calc, reason: req.body && req.body.reason });
+
+    res.status(200).json({
+      message: 'Booking cancelled successfully',
+      booking: updated,
+      refundPercent: calc.refundPercent,
+      refundAmount: calc.refundAmount,
+    });
+
+    notifySafe({
+      user_id: booking.provider_id, type: 'booking_cancelled', title: 'Booking Cancelled',
+      body: 'The consumer has cancelled a booking.', metadata: { bookingId: booking.id },
+    });
+  } catch (error) { next(error); }
+};
+

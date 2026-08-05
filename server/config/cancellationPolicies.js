@@ -29,3 +29,14 @@ const calculateRefund = (booking, policy, providerFault = false, now = new Date(
   const hoursBeforeStart = (bookingStart(booking).getTime() - now.getTime()) / 3600000;
   if (providerFault) return { refundPercent: 100, refundAmount: total, hoursBeforeStart };
 
+  let refundPercent = 0;
+  if (policy.policy_type !== 'non_refundable') {
+    if (hoursBeforeStart >= policy.full_refund_hours) refundPercent = 100;
+    else if (hoursBeforeStart >= policy.partial_refund_hours && policy.partial_refund_percent > 0) {
+      refundPercent = policy.partial_refund_percent;
+    }
+  }
+  const refundAmount = Math.round(total * refundPercent) / 100;
+  return { refundPercent, refundAmount, hoursBeforeStart };
+};
+

@@ -32,3 +32,18 @@ const releaseEscrow = async (paymentId, providerId) => {
   throw new Error('releaseEscrow not implemented — integrate gateway SDK');
 };
 
+const processRefund = async (paymentId, amount, reason = null) => {
+  // Records the refund against the payment. Swap the body for a PayHere/Stripe refund call
+  // once live gateway credentials exist; the DB bookkeeping below stays the same.
+  const { query } = require('../config/db');
+  const { rows } = await query(
+    `UPDATE payments
+     SET status = 'refunded', refund_amount = $2, refund_reason = $3, refunded_at = NOW(), updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    [paymentId, amount, reason]
+  );
+  if (!rows[0]) throw new Error('Payment not found');
+  return { refundReference: `refund_${rows[0].id}`, payment: rows[0] };
+};
+

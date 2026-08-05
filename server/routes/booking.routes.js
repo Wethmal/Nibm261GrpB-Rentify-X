@@ -37,3 +37,6 @@ router.post('/:id/cancel', authenticate, cancellation.cancelByConsumer);
 // POST /api/v1/bookings/:id/cancel-by-provider — Provider cancellation (always full refund)
 router.post('/:id/cancel-by-provider', authenticate, cancellation.cancelByProvider);
 
+// GET /api/v1/bookings/:id/cancellation-preview — Refund preview for the consumer (no side effects)
+router.get('/:id/cancellation-preview', authenticate, cancellation.getPreview);
+

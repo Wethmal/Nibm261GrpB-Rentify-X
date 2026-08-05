@@ -40,3 +40,7 @@ router.delete('/:id', authenticate, authorize('provider'), listingController.rem
 // GET /api/v1/listings/:id/availability — Get availability for a listing
 router.get('/:id/availability', listingController.getAvailability);
 
+// PUT /api/v1/listings/:id/availability — Update availability (provider only)
+router.put('/:id/availability', authenticate, authorize('provider'), listingController.updateAvailability);
+
+// GET /api/v1/listings/:id/cancellation-policy — Effective cancellation policy (listing override or platform default)
