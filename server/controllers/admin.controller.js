@@ -326,3 +326,20 @@ const updateCategory = async (req, res, next) => {
   }
 };
 
+const deleteCategory = async (req, res, next) => {
+  try {
+    const activeListings = await query(
+      "SELECT COUNT(*) FROM listings WHERE category_id = $1 AND status = 'active'",
+      [req.params.id]
+    );
+    if (Number(activeListings.rows[0].count) > 0) {
+      return res.status(409).json({ error: 'Conflict', message: 'Category has active listings' });
+    }
+    const category = await categoryModel.softDelete(req.params.id);
+    if (!category) return res.status(404).json({ error: 'Not Found', message: 'Category not found' });
+    res.status(200).json(category);
+  } catch (error) {
+    next(error);
+  }
+};
+
