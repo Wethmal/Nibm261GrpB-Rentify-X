@@ -40,3 +40,6 @@ router.post('/:id/cancel-by-provider', authenticate, cancellation.cancelByProvid
 // GET /api/v1/bookings/:id/cancellation-preview — Refund preview for the consumer (no side effects)
 router.get('/:id/cancellation-preview', authenticate, cancellation.getPreview);
 
+// PUT /api/v1/bookings/:id/complete — Mark booking as completed (provider)
+router.put('/:id/complete', authenticate, bookingController.complete);
+

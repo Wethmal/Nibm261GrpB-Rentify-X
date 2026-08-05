@@ -40,3 +40,15 @@ const calculateRefund = (booking, policy, providerFault = false, now = new Date(
   return { refundPercent, refundAmount, hoursBeforeStart };
 };
 
+const describePolicy = (p) => {
+  if (p.policy_type === 'non_refundable') return { summary: ['No refund on cancellation.'] };
+  const lines = [`Cancel ${p.full_refund_hours}+ hours before start: full refund.`];
+  if (p.partial_refund_percent > 0) {
+    lines.push(`Cancel ${p.partial_refund_hours}–${p.full_refund_hours} hours before start: ${p.partial_refund_percent}% refund.`);
+    lines.push(`Cancel less than ${p.partial_refund_hours} hours before start: no refund.`);
+  } else {
+    lines.push(`Cancel less than ${p.full_refund_hours} hours before start: no refund.`);
+  }
+  return { summary: lines };
+};
+

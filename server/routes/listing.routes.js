@@ -44,3 +44,6 @@ router.get('/:id/availability', listingController.getAvailability);
 router.put('/:id/availability', authenticate, authorize('provider'), listingController.updateAvailability);
 
 // GET /api/v1/listings/:id/cancellation-policy — Effective cancellation policy (listing override or platform default)
+router.get('/:id/cancellation-policy', require('../controllers/cancellation.controller').getListingPolicy);
+
+// PUT /api/v1/listings/:id/cancellation-policy — Provider sets the policy for their listing

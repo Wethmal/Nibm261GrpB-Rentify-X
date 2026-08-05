@@ -143,3 +143,31 @@ const cancelByConsumer = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+const cancelByProvider = async (req, res, next) => {
+  try {
+    const { booking, listing } = await loadBookingContext(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    if (booking.provider_id !== req.user.userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only the booking provider can use this endpoint' });
+    }
+    if (!cancellable(booking)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Can only cancel pending or confirmed bookings' });
+    }
+    const policy = await resolvePolicy(listing);
+    const calc = calculateRefund(booking, policy, true);
+    const updated = await applyCancellation({ booking, actorId: req.user.userId, providerFault: true, calc, reason: req.body && req.body.reason });
+
+    res.status(200).json({
+      message: 'Booking cancelled. The consumer receives a full refund.',
+      booking: updated,
+      refundPercent: 100,
+      refundAmount: calc.refundAmount,
+    });
+
+    notifySafe({
+      user_id: booking.consumer_id, type: 'booking_cancelled', title: 'Booking Cancelled by Provider',
+      body: 'The provider cancelled your booking. You will receive a full refund.', metadata: { bookingId: booking.id },
+    });
+  } catch (error) { next(error); }
+};
+
