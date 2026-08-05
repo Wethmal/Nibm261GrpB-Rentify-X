@@ -4,3 +4,4 @@
  * Mounted at /api/v1/providers.
  */
 const express = require('express');
+const router = express.Router();

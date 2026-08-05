@@ -57,3 +57,46 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
 import ProviderApprovalPage from './pages/admin/ProviderApprovalPage.jsx';
 import NICVerificationPage from './pages/admin/NICVerificationPage.jsx';
 import ListingModerationPage from './pages/admin/ListingModerationPage.jsx';
+import UserManagementPage from './pages/admin/UserManagementPage.jsx';
+import DisputesPage from './pages/admin/DisputesPage.jsx';
+import CategoryManagementPage from './pages/admin/CategoryManagementPage.jsx';
+import ReportsPage from './pages/admin/ReportsPage.jsx';
+
+// --- Shared Pages ---
+import ProfilePage from './pages/shared/ProfilePage.jsx';
+import MessagingPage from './pages/shared/MessagingPage.jsx';
+import NotificationsPage from './pages/shared/NotificationsPage.jsx';
+
+// --- Error Pages ---
+import NotFoundPage from './pages/errors/NotFoundPage.jsx';
+import UnauthorizedPage from './pages/errors/UnauthorizedPage.jsx';
+
+function App() {
+  return (
+    <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <Navbar />
+
+      <main className="app__content" style={{ flex: 1 }}>
+        <Routes>
+          {/* ======================== Public Routes ======================== */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/listings/:id" element={<ListingDetailPage />} />
+          <Route path="/providers/:id" element={<ProviderProfilePage />} />
+
+          {/* =================== Authenticated Routes ==================== */}
+          {/* Consumer */}
+          <Route path="/bookings" element={<ProtectedRoute><BookingHistoryPage /></ProtectedRoute>} />
+          <Route path="/bundle-booking" element={<ProtectedRoute allowedRoles={['consumer']}><BundleBookingPage /></ProtectedRoute>} />
+
+          {/* Provider */}
+          <Route path="/provider/dashboard" element={<ProtectedRoute allowedRoles={['provider']}><ProviderDashboardPage /></ProtectedRoute>} />
+          <Route path="/provider/listings/new/service" element={<ProtectedRoute allowedRoles={['provider']}><CreateServiceListingPage /></ProtectedRoute>} />
+          <Route path="/provider/listings/new/equipment" element={<ProtectedRoute allowedRoles={['provider']}><CreateEquipmentListingPage /></ProtectedRoute>} />
+          <Route path="/provider/availability" element={<ProtectedRoute allowedRoles={['provider']}><AvailabilityCalendarPage /></ProtectedRoute>} />
+          <Route path="/provider/earnings" element={<ProtectedRoute allowedRoles={['provider']}><ProviderEarningsPage /></ProtectedRoute>} />
+          <Route path="/provider/booking-requests" element={<ProtectedRoute allowedRoles={['provider']}><BookingRequestsPage /></ProtectedRoute>} />
+

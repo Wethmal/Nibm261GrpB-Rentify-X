@@ -327,3 +327,12 @@ const cancel = async (req, res, next) => {
   }
 };
 
+const complete = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
+    }
+
+    const { id } = req.params;
+    const booking = await bookingModel.findById(id);
+

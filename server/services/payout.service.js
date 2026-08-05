@@ -4,3 +4,7 @@
  */
 const { query } = require('../config/db');
 
+const PLATFORM_FEE_RATE = 0.1;
+
+const round2 = (n) => Math.round(Number(n) * 100) / 100;
+

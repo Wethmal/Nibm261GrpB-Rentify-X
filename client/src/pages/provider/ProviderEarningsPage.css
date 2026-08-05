@@ -1,0 +1,12 @@
+.earnings-page { max-width: 1000px; margin: 0 auto; padding: 24px 16px 48px; }
+.earnings-header { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 20px; }
+.earnings-header h1 { margin: 0 0 4px; font-size: 1.6rem; color: #0f172a; }
+.earnings-header p { margin: 0; color: #64748b; max-width: 560px; }
+.earnings-header__actions { display: flex; gap: 8px; align-items: center; }
+.earnings-header__actions .fx-btn { text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.earnings-loading { padding: 40px; text-align: center; color: #64748b; }
+.earnings-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.earnings-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 4px; color: #2563eb; }
+.earnings-card span { color: #64748b; font-size: 0.85rem; }
+.earnings-card strong { color: #0f172a; font-size: 1.2rem; }
+.earnings-panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 18px; }
