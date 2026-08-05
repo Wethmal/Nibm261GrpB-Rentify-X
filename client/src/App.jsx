@@ -76,3 +76,19 @@ function App() {
     <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
 
+      <main className="app__content" style={{ flex: 1 }}>
+        <Routes>
+          {/* ======================== Public Routes ======================== */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/listings/:id" element={<ListingDetailPage />} />
+          <Route path="/providers/:id" element={<ProviderProfilePage />} />
+
+          {/* =================== Authenticated Routes ==================== */}
+          {/* Consumer */}
+          <Route path="/bookings" element={<ProtectedRoute><BookingHistoryPage /></ProtectedRoute>} />
+          <Route path="/bundle-booking" element={<ProtectedRoute allowedRoles={['consumer']}><BundleBookingPage /></ProtectedRoute>} />
+

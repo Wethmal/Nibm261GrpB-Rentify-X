@@ -79,3 +79,18 @@ CREATE INDEX IF NOT EXISTS idx_user_reports_status ON user_reports(status, creat
 CREATE INDEX IF NOT EXISTS idx_user_reports_reported ON user_reports(reported_user_id);
 CREATE INDEX IF NOT EXISTS idx_user_reports_reporter_day ON user_reports(reporter_id, created_at);
 
+-- ---------- Admin audit log (US23 / US24) ----------
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    admin_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    action VARCHAR(60) NOT NULL,
+    target_type VARCHAR(30) NOT NULL,
+    target_id UUID,
+    details JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_target ON admin_audit_logs(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_created ON admin_audit_logs(created_at DESC);
+
+-- ---------- User restrictions (US24) ----------
+ALTER TABLE users ADD COLUMN IF NOT EXISTS status_reason TEXT;
