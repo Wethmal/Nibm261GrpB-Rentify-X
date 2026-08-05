@@ -15,3 +15,4 @@ const record = async (adminId, action, targetType, targetId, details = {}) => {
   }
 };
 
+module.exports = { record };

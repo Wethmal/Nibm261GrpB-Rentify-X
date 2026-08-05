@@ -69,3 +69,4 @@ const checkRestriction = async (userId) => {
   }
 };
 
+module.exports = { suspend, ban, reinstate, checkRestriction };

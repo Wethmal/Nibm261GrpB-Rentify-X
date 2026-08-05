@@ -408,3 +408,11 @@ const getAnalytics = async (req, res, next) => {
   }
 };
 
+module.exports = {
+  getPendingProviders, approveProvider, rejectProvider, getPendingNICVerifications,
+  getListingsForModeration, approveListing, suspendListing,
+  getUsers, banUser, suspendUser, reinstateUser, getUserDetail,
+  getNICVerificationDetail, decideNICVerification,
+  getCategories, createCategory, updateCategory, deleteCategory,
+  getDisputes, resolveDispute, getAnalytics,
+};
