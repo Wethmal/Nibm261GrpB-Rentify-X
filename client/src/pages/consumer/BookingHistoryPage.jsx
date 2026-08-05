@@ -336,3 +336,76 @@ function BookingHistoryPage() {
                       </button>
                     )}
 
+                    {(booking.status === 'pending' || booking.status === 'confirmed') && new Date(`${String(booking.scheduled_date).slice(0, 10)}T${String(booking.scheduled_time || '00:00').slice(0, 5)}`) > new Date() && (
+                      <button className="btn-cancel" onClick={() => handleCancel(booking)} data-testid="cancel-booking-button">
+                        <Ban size={14} style={{ marginRight: '4px' }} />
+                        {booking.status === 'pending' ? 'Cancel Request' : 'Cancel Booking'}
+                      </button>
+                    )}
+
+                    {booking.provider_id && (
+                      <>
+                        <Link to={`/providers/${booking.provider_id}`} className="btn-details">Provider profile</Link>
+                        <ReportButton userId={booking.provider_id} userName={providerName} bookingId={booking.id} />
+                      </>
+                    )}
+
+                    {booking.status === 'confirmed' && (
+                      <button className="btn-contact">
+                        <MessageSquare size={14} style={{ marginRight: '4px' }} />
+                        Contact Provider
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* Empty State */
+        <div className="bookings-empty" data-testid="bookings-empty">
+          <ShieldAlert size={48} className="bookings-empty__icon" />
+          <h3>No bookings found</h3>
+          <p>We couldn't find any bookings matching this category. Start searching for rentals!</p>
+          <Link to="/search" className="btn-explore">
+            Explore Rentals
+          </Link>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="bookings-pagination" data-testid="bookings-pagination">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="pagination-btn"
+          >
+            Prev
+          </button>
+
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+            >
+              {page}
+            </button>
+          ))}
+
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="pagination-btn"
+          >
+            Next
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default BookingHistoryPage;
