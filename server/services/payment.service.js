@@ -47,3 +47,4 @@ const processRefund = async (paymentId, amount, reason = null) => {
   return { refundReference: `refund_${rows[0].id}`, payment: rows[0] };
 };
 
+module.exports = { createPaymentSession, verifyWebhookSignature, releaseEscrow, processRefund };

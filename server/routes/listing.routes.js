@@ -47,3 +47,6 @@ router.put('/:id/availability', authenticate, authorize('provider'), listingCont
 router.get('/:id/cancellation-policy', require('../controllers/cancellation.controller').getListingPolicy);
 
 // PUT /api/v1/listings/:id/cancellation-policy — Provider sets the policy for their listing
+router.put('/:id/cancellation-policy', authenticate, authorize('provider'), require('../controllers/cancellation.controller').setListingPolicy);
+
+module.exports = router;

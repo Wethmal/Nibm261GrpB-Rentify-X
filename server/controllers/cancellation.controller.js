@@ -171,3 +171,10 @@ const cancelByProvider = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+/** Legacy PUT /bookings/:id/cancel: routes to the right flow for the caller's role. */
+const cancelAny = (req, res, next) => {
+  if (req.user && req.user.role === 'provider') return cancelByProvider(req, res, next);
+  return cancelByConsumer(req, res, next);
+};
+
+module.exports = { resolvePolicy, getListingPolicy, setListingPolicy, getPreview, cancelByConsumer, cancelByProvider, cancelAny };

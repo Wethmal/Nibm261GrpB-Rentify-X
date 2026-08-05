@@ -52,3 +52,4 @@ const describePolicy = (p) => {
   return { summary: lines };
 };
 
+module.exports = { PRESETS, POLICY_TYPES, calculateRefund, describePolicy, bookingStart };

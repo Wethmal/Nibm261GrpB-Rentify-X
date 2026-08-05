@@ -43,3 +43,4 @@ router.get('/:id/cancellation-preview', authenticate, cancellation.getPreview);
 // PUT /api/v1/bookings/:id/complete — Mark booking as completed (provider)
 router.put('/:id/complete', authenticate, bookingController.complete);
 
+module.exports = router;
