@@ -377,3 +377,19 @@ const resolveDispute = async (req, res, next) => {
   }
 };
 
+const getAnalytics = async (req, res, next) => {
+  try {
+    const [users, listings, bookings, revenue, pendingProviders, pendingListings, growth, activeUsers] = await Promise.all([
+      query('SELECT role, COUNT(*)::int FROM users WHERE is_deleted = false GROUP BY role'),
+      query("SELECT type, COUNT(*)::int FROM listings WHERE status != 'deleted' GROUP BY type"),
+      query('SELECT status, COUNT(*)::int FROM bookings GROUP BY status'),
+      query("SELECT COALESCE(SUM(total_price), 0)::numeric(12,2) AS total FROM bookings WHERE status IN ('confirmed', 'completed')"),
+      query("SELECT COUNT(*)::int AS count FROM users WHERE role = 'provider' AND status = 'pending_verification'"),
+      query("SELECT COUNT(*)::int AS count FROM listings WHERE status = 'pending_approval'"),
+      query(`SELECT to_char(d::date, 'YYYY-MM-DD') AS day, COUNT(b.id)::int AS bookings
+             FROM generate_series(CURRENT_DATE - INTERVAL '29 days', CURRENT_DATE, INTERVAL '1 day') d
+             LEFT JOIN bookings b ON b.created_at::date = d::date
+             GROUP BY 1 ORDER BY 1`),
+      query("SELECT COUNT(*)::int AS count FROM users WHERE is_deleted = false AND status = 'verified'")
+    ]);
+

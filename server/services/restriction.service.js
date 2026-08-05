@@ -46,3 +46,7 @@ const reinstate = async (userId) => {
   return rows[0] || null;
 };
 
+/**
+ * Returns { restricted, status, reason, until } for a user id, lifting expired suspensions.
+ * Fails open (restricted: false) on unexpected DB errors so an outage does not lock everyone out.
+ */
