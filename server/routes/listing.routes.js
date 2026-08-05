@@ -32,3 +32,8 @@ router.post('/', authenticate, authorize('provider'), listingController.create);
 router.post('/:id/photos', authenticate, authorize('provider'), upload.array('photos'), listingController.uploadPhotos);
 
 // PUT /api/v1/listings/:id — Update a listing (provider owner only)
+router.put('/:id', authenticate, authorize('provider'), listingController.update);
+
+// DELETE /api/v1/listings/:id — Soft-delete a listing (provider owner only)
+router.delete('/:id', authenticate, authorize('provider'), listingController.remove);
+

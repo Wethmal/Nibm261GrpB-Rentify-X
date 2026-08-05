@@ -31,3 +31,6 @@ router.put('/:id/reject', authenticate, bookingController.reject);
 // PUT /api/v1/bookings/:id/cancel — Cancel a booking (consumer or provider)
 router.put('/:id/cancel', authenticate, cancellation.cancelAny);
 
+// POST /api/v1/bookings/:id/cancel — Consumer cancellation with policy-based refund
+router.post('/:id/cancel', authenticate, cancellation.cancelByConsumer);
+

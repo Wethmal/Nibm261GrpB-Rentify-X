@@ -25,3 +25,10 @@ const verifyWebhookSignature = (payload, signature) => {
   throw new Error('verifyWebhookSignature not implemented — integrate gateway SDK');
 };
 
+const releaseEscrow = async (paymentId, providerId) => {
+  // TODO: Trigger payout/transfer to provider's account via gateway
+  // TODO: Update payment record status to 'released'
+  // TODO: Return transaction reference ID
+  throw new Error('releaseEscrow not implemented — integrate gateway SDK');
+};
+

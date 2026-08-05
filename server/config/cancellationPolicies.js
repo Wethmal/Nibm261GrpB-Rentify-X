@@ -13,3 +13,11 @@ const PRESETS = {
 const POLICY_TYPES = Object.keys(PRESETS);
 
 /** Build the start Date of a booking from its DATE and TIME columns. */
+const bookingStart = (booking) => {
+  const d = booking.scheduled_date instanceof Date
+    ? booking.scheduled_date.toISOString().slice(0, 10)
+    : String(booking.scheduled_date).slice(0, 10);
+  const t = String(booking.scheduled_time || '00:00:00').slice(0, 8);
+  return new Date(`${d}T${t.length === 5 ? `${t}:00` : t}`);
+};
+
