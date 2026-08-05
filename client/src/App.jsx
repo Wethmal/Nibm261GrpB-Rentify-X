@@ -69,3 +69,10 @@ import NotificationsPage from './pages/shared/NotificationsPage.jsx';
 
 // --- Error Pages ---
 import NotFoundPage from './pages/errors/NotFoundPage.jsx';
+import UnauthorizedPage from './pages/errors/UnauthorizedPage.jsx';
+
+function App() {
+  return (
+    <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <Navbar />
+

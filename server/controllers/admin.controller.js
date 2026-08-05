@@ -294,3 +294,125 @@ const decideNICVerification = async (req, res, next) => {
   }
 };
 
+const getCategories = async (req, res, next) => {
+  try {
+    const categories = await categoryModel.findAll(true);
+    res.status(200).json({ categories });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createCategory = async (req, res, next) => {
+  try {
+    const { name, type, parent_id } = req.body;
+    if (!name || !['service', 'equipment'].includes(type)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Valid name and type are required' });
+    }
+    const category = await categoryModel.create({ name, type, parent_id });
+    res.status(201).json(category);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateCategory = async (req, res, next) => {
+  try {
+    const category = await categoryModel.update(req.params.id, req.body);
+    if (!category) return res.status(404).json({ error: 'Not Found', message: 'Category not found or no changes made' });
+    res.status(200).json(category);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteCategory = async (req, res, next) => {
+  try {
+    const activeListings = await query(
+      "SELECT COUNT(*) FROM listings WHERE category_id = $1 AND status = 'active'",
+      [req.params.id]
+    );
+    if (Number(activeListings.rows[0].count) > 0) {
+      return res.status(409).json({ error: 'Conflict', message: 'Category has active listings' });
+    }
+    const category = await categoryModel.softDelete(req.params.id);
+    if (!category) return res.status(404).json({ error: 'Not Found', message: 'Category not found' });
+    res.status(200).json(category);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getDisputes = async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT b.*, c.full_name AS consumer_name, p.full_name AS provider_name
+       FROM bookings b
+       JOIN users c ON c.id = b.consumer_id
+       JOIN users p ON p.id = b.provider_id
+       WHERE b.status = 'disputed'
+       ORDER BY b.updated_at DESC`
+    );
+    res.status(200).json({ disputes: rows });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resolveDispute = async (req, res, next) => {
+  try {
+    const status = req.body.status || 'completed';
+    const allowed = ['completed', 'cancelled', 'rejected'];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Invalid dispute resolution status' });
+    }
+    const { rows } = await query(
+      'UPDATE bookings SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [status, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Not Found', message: 'Dispute not found' });
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getAnalytics = async (req, res, next) => {
+  try {
+    const [users, listings, bookings, revenue, pendingProviders, pendingListings, growth, activeUsers] = await Promise.all([
+      query('SELECT role, COUNT(*)::int FROM users WHERE is_deleted = false GROUP BY role'),
+      query("SELECT type, COUNT(*)::int FROM listings WHERE status != 'deleted' GROUP BY type"),
+      query('SELECT status, COUNT(*)::int FROM bookings GROUP BY status'),
+      query("SELECT COALESCE(SUM(total_price), 0)::numeric(12,2) AS total FROM bookings WHERE status IN ('confirmed', 'completed')"),
+      query("SELECT COUNT(*)::int AS count FROM users WHERE role = 'provider' AND status = 'pending_verification'"),
+      query("SELECT COUNT(*)::int AS count FROM listings WHERE status = 'pending_approval'"),
+      query(`SELECT to_char(d::date, 'YYYY-MM-DD') AS day, COUNT(b.id)::int AS bookings
+             FROM generate_series(CURRENT_DATE - INTERVAL '29 days', CURRENT_DATE, INTERVAL '1 day') d
+             LEFT JOIN bookings b ON b.created_at::date = d::date
+             GROUP BY 1 ORDER BY 1`),
+      query("SELECT COUNT(*)::int AS count FROM users WHERE is_deleted = false AND status = 'verified'")
+    ]);
+
+    res.status(200).json({
+      usersByRole: users.rows,
+      listingsByType: listings.rows,
+      bookingsByStatus: bookings.rows,
+      totalRevenue: revenue.rows[0].total,
+      pendingProviders: pendingProviders.rows[0].count,
+      pendingListings: pendingListings.rows[0].count,
+      bookingsLast30Days: growth.rows,
+      activeUsers: activeUsers.rows[0].count
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  getPendingProviders, approveProvider, rejectProvider, getPendingNICVerifications,
+  getListingsForModeration, approveListing, suspendListing,
+  getUsers, banUser, suspendUser, reinstateUser, getUserDetail,
+  getNICVerificationDetail, decideNICVerification,
+  getCategories, createCategory, updateCategory, deleteCategory,
+  getDisputes, resolveDispute, getAnalytics,
+};

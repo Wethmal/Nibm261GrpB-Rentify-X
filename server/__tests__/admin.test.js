@@ -22,3 +22,7 @@ describe('Admin Endpoints RBAC', () => {
     const res = await request(app).get('/api/v1/admin/analytics')
       .set('Authorization', `Bearer ${token}`);
 
+    // Expect 403 Forbidden
+    expect(res.statusCode).toEqual(403);
+  });
+});

@@ -58,3 +58,24 @@ CREATE INDEX IF NOT EXISTS idx_provider_payouts_provider ON provider_payouts(pro
 CREATE INDEX IF NOT EXISTS idx_provider_payouts_created ON provider_payouts(created_at);
 
 -- ---------- User reports (US29 / US23) ----------
+CREATE TABLE IF NOT EXISTS user_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reporter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    reported_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    booking_id UUID REFERENCES bookings(id) ON DELETE SET NULL,
+    reason VARCHAR(40) NOT NULL CHECK (reason IN ('abusive_behavior', 'fraud', 'fake_profile', 'no_show', 'harassment', 'other')),
+    description TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'reviewing', 'resolved', 'dismissed')),
+    admin_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    resolution_note TEXT,
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CHECK (reporter_id <> reported_user_id)
+);
+-- One open report per reporter/target pair (duplicate prevention)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_user_reports_open ON user_reports(reporter_id, reported_user_id) WHERE status IN ('pending', 'reviewing');
+CREATE INDEX IF NOT EXISTS idx_user_reports_status ON user_reports(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_reports_reported ON user_reports(reported_user_id);
+CREATE INDEX IF NOT EXISTS idx_user_reports_reporter_day ON user_reports(reporter_id, created_at);
+
