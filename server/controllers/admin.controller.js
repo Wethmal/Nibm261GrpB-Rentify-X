@@ -316,3 +316,13 @@ const createCategory = async (req, res, next) => {
   }
 };
 
+const updateCategory = async (req, res, next) => {
+  try {
+    const category = await categoryModel.update(req.params.id, req.body);
+    if (!category) return res.status(404).json({ error: 'Not Found', message: 'Category not found or no changes made' });
+    res.status(200).json(category);
+  } catch (error) {
+    next(error);
+  }
+};
+
