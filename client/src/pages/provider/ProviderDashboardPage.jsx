@@ -453,3 +453,188 @@ function ProviderDashboardPage() {
               </button>
             </div>
 
+            <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <ListingPolicyControl listingId={editingListing.id} />
+
+              {/* Title */}
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>Listing Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.title}
+                  onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>Description *</label>
+                <textarea
+                  rows="3"
+                  required
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                />
+              </div>
+
+              {/* Pricing & Unit */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>Price (LKR) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={editFormData.price_per_unit}
+                    onChange={(e) => setEditFormData({ ...editFormData, price_per_unit: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>Unit Label *</label>
+                  <select
+                    value={editFormData.unit_label}
+                    onChange={(e) => setEditFormData({ ...editFormData, unit_label: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#ffffff' }}
+                  >
+                    <option value="day">per day</option>
+                    <option value="hour">per hour</option>
+                    <option value="session">per session</option>
+                    <option value="item">per item</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* District & Location */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>District *</label>
+                  <select
+                    value={editFormData.district}
+                    onChange={(e) => setEditFormData({ ...editFormData, district: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#ffffff' }}
+                  >
+                    {SRI_LANKA_DISTRICTS.map(dist => (
+                      <option key={dist} value={dist}>{dist}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>Listing Status</label>
+                  <select
+                    value={editFormData.status}
+                    onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#ffffff' }}
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive / Paused</option>
+                    <option value="pending_approval">Pending Approval</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Geolocation Coordinates & Auto-Detect GPS */}
+              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <label style={{ fontWeight: 600, fontSize: '0.875rem', color: '#334155' }}>GPS Geolocation Coordinates</label>
+                  <button
+                    type="button"
+                    onClick={handleDetectGps}
+                    disabled={detectingGps}
+                    style={{ background: '#3b82f6', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '0.35rem 0.75rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    {detectingGps ? 'Detecting...' : ' Auto-Detect My Location'}
+                  </button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Latitude</span>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 6.9271"
+                      value={editFormData.geo_lat}
+                      onChange={(e) => setEditFormData({ ...editFormData, geo_lat: e.target.value })}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Longitude</span>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 79.8612"
+                      value={editFormData.geo_lng}
+                      onChange={(e) => setEditFormData({ ...editFormData, geo_lng: e.target.value })}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Photos Management (Cloudinary) */}
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.5rem', color: '#334155' }}>Listing Images (Cloudinary)</label>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                  {editFormData.photos.map((photoUrl, idx) => (
+                    <div key={idx} style={{ position: 'relative', width: '70px', height: '70px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                      <img
+                        src={photoUrl.startsWith('http') ? photoUrl : `http://localhost:5000${photoUrl}`}
+                        alt={`Listing ${idx}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhoto(idx)}
+                        style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(239, 68, 68, 0.9)', color: '#fff', border: 'none', borderRadius: '50%', width: '20px', height: '20px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+
+                  <label style={{ width: '70px', height: '70px', borderRadius: '8px', border: '2px dashed #cbd5e1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#f8fafc', color: '#64748b', fontSize: '0.75rem' }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleUploadNewPhotos}
+                      disabled={uploadingPhoto}
+                      style={{ display: 'none' }}
+                    />
+                    {uploadingPhoto ? '...' : '+ Add'}
+                  </label>
+                </div>
+                <small style={{ color: '#64748b', fontSize: '0.75rem' }}>All new uploaded photos go directly to Cloudinary folder (rentify-uploads/listings).</small>
+              </div>
+
+              {/* Form Buttons */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingListing(null)}
+                  style={{ padding: '0.65rem 1.25rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updating || uploadingPhoto}
+                  style={{ padding: '0.65rem 1.35rem', borderRadius: '6px', border: 'none', background: 'var(--color-primary, #3b82f6)', color: '#ffffff', fontWeight: 600, cursor: 'pointer', opacity: (updating || uploadingPhoto) ? 0.6 : 1 }}
+                >
+                  {updating ? 'Saving...' : 'Save All Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ProviderDashboardPage;
