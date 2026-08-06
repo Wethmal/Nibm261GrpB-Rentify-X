@@ -15,3 +15,5 @@ const csvCell = (v) => {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
+// ---------- Earnings (provider only) ----------
+

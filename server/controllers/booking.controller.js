@@ -344,3 +344,15 @@ const complete = async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden', message: 'Only providers can complete bookings' });
     }
 
+    if (booking.status !== 'confirmed') {
+      return res.status(400).json({ error: 'Bad Request', message: 'Can only complete confirmed bookings' });
+    }
+
+    const updatedBooking = await bookingModel.updateStatus(id, 'completed');
+    try {
+      await require('../services/payout.service').createForBooking({ ...booking, ...updatedBooking });
+    } catch (payoutErr) {
+      console.error('Payout creation failed:', payoutErr.message);
+    }
+    res.status(200).json({ message: 'Booking completed successfully', booking: updatedBooking });
+
