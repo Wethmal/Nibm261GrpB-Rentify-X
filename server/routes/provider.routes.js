@@ -13,3 +13,5 @@ const authorize = require('../middleware/role.middleware');
 router.get('/me/payouts', authenticate, authorize('provider'), providerController.getPayouts);
 router.get('/me/earnings/bookings', authenticate, authorize('provider'), providerController.getBookingEarnings);
 router.get('/me/earnings/summary', authenticate, authorize('provider'), providerController.getEarningsSummary);
+router.get('/me/earnings/export', authenticate, authorize('provider'), providerController.exportPayoutsCsv);
+

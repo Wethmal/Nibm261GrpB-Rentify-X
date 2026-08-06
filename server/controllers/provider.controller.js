@@ -105,3 +105,26 @@ const getEarningsSummary = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+const exportPayoutsCsv = async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT p.id, b.scheduled_date, COALESCE(sl.title, el.title, 'Booking') AS listing,
+              p.gross_amount, p.platform_fee, p.net_amount, p.status, p.paid_at, p.created_at
+       FROM provider_payouts p
+       JOIN bookings b ON b.id = p.booking_id
+       LEFT JOIN listings sl ON sl.id = b.service_listing_id
+       LEFT JOIN listings el ON el.id = b.equipment_listing_id
+       WHERE p.provider_id = $1 ORDER BY p.created_at DESC`,
+      [req.user.userId]
+    );
+    const header = ['payout_id', 'scheduled_date', 'listing', 'gross_amount', 'platform_fee', 'net_amount', 'status', 'paid_at', 'created_at'];
+    const lines = [header.join(',')].concat(rows.map((r) => [
+      r.id, r.scheduled_date instanceof Date ? r.scheduled_date.toISOString().slice(0, 10) : r.scheduled_date,
+      r.listing, r.gross_amount, r.platform_fee, r.net_amount, r.status, r.paid_at, r.created_at,
+    ].map(csvCell).join(',')));
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="rentify-payouts.csv"');
+    res.status(200).send(lines.join('\n'));
+  } catch (error) { next(error); }
+};
+
