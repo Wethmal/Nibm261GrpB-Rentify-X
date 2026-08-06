@@ -32,3 +32,4 @@ const createForBooking = async (booking, grossOverride = null) => {
   return rows[0] || null;
 };
 
+module.exports = { PLATFORM_FEE_RATE, computeAmounts, createForBooking };

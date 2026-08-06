@@ -356,3 +356,22 @@ const complete = async (req, res, next) => {
     }
     res.status(200).json({ message: 'Booking completed successfully', booking: updatedBooking });
 
+    setImmediate(async () => {
+      try {
+        await notificationModel.create({
+          user_id: booking.consumer_id,
+          type: 'booking_completed',
+          title: 'Booking Completed',
+          body: `Your booking request has been marked as completed.`,
+          metadata: { bookingId: id }
+        });
+      } catch (err) {
+        console.error('Failed to send booking_completed notification:', err);
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { create, getAll, getById, accept, reject, cancel, complete };
