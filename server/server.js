@@ -105,3 +105,7 @@ app.use('/api/v1/search', searchRoutes);
 app.use('/api/v1/messages', messagingRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/providers', providerRoutes);
+app.use('/api/v1/realtime', realtimeRoutes);
+
+// --- Global Error Handler (must be last middleware) ---

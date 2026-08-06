@@ -9,3 +9,5 @@ const path = require('path');
 const { pool } = require('../config/db');
 
 const files = process.argv.slice(2);
+if (files.length === 0) files.push('18_gap_features.sql');
+

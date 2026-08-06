@@ -94,3 +94,11 @@ CREATE INDEX IF NOT EXISTS idx_admin_audit_created ON admin_audit_logs(created_a
 
 -- ---------- User restrictions (US24) ----------
 ALTER TABLE users ADD COLUMN IF NOT EXISTS status_reason TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_until TIMESTAMP WITH TIME ZONE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS nic_review_note TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS nic_reviewed_at TIMESTAMP WITH TIME ZONE;
+
+-- ---------- Listing suspension reason (US20) ----------
+ALTER TABLE listings ADD COLUMN IF NOT EXISTS suspension_reason TEXT;
+

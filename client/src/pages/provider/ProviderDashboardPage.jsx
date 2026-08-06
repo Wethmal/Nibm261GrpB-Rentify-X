@@ -279,3 +279,362 @@ function ProviderDashboardPage() {
     }
   };
 
+  if (loading) {
+    return <div className="provider-dashboard-page loading">Loading dashboard...</div>;
+  }
+
+  if (error) {
+    return <div className="provider-dashboard-page error">{error}</div>;
+  }
+
+  return (
+    <div className="provider-dashboard-page">
+      <header className="dashboard-header">
+        <h1>Provider Dashboard</h1>
+        <p>Manage your bookings, listings, and availability.</p>
+      </header>
+
+      <section className="stats-grid">
+        <div className="stat-card">
+          <h3>Upcoming Bookings</h3>
+          <p className="stat-value">{stats.totalUpcoming}</p>
+        </div>
+        <div className="stat-card">
+          <h3>Pending Requests</h3>
+          <p className="stat-value">{stats.pendingRequests}</p>
+        </div>
+        <div className="stat-card">
+          <h3>Active / Pending Listings</h3>
+          <p className="stat-value">{stats.activeListingsCount} / {stats.pendingListingsCount}</p>
+        </div>
+        <div className="stat-card">
+          <h3>Total Earnings</h3>
+          <p className="stat-value">Rs. {stats.totalEarnings.toLocaleString()}</p>
+        </div>
+      </section>
+
+      <section className="quick-actions">
+        <h2>Quick Actions</h2>
+        <div className="actions-grid">
+          <Link to="/provider/listings/new/service" className="btn btn-outline">Create Service Listing</Link>
+          <Link to="/provider/listings/new/equipment" className="btn btn-outline">Create Equipment Listing</Link>
+          <Link to="/provider/availability" className="btn btn-outline">Manage Availability</Link>
+          <Link to="/provider/booking-requests" className="btn btn-outline">View Booking Requests</Link>
+          <Link to="/provider/earnings" className="btn btn-outline">Earnings &amp; Payouts</Link>
+        </div>
+      </section>
+
+      <EarningsWidget />
+
+      <div className="dashboard-content-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}>
+        <section className="upcoming-bookings">
+          <h2>Upcoming Bookings</h2>
+          {upcomingBookings.length === 0 ? (
+            <div className="empty-state">
+              <p>You have no upcoming confirmed bookings.</p>
+            </div>
+          ) : (
+            <div className="bookings-list">
+              {upcomingBookings.map(booking => (
+                <div key={booking.id} className="booking-card">
+                  <div className="booking-info">
+                    <h4>{booking.listing_title}</h4>
+                    <p><strong>Consumer:</strong> {booking.consumer_name}</p>
+                    <p><strong>Date:</strong> {new Date(booking.scheduled_date).toLocaleDateString()}</p>
+                    <p><strong>Time:</strong> {booking.scheduled_time} ({booking.duration_hours} hours)</p>
+                  </div>
+                  <div className="booking-status">
+                    <span className={`badge badge--${booking.status}`}>{booking.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="recent-listings">
+          <h2>Your Recent Listings</h2>
+          {myListings.length === 0 ? (
+            <div className="empty-state">
+              <p>You haven't created any listings yet.</p>
+              <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                <Link to="/provider/listings/new/service" className="btn btn-primary" style={{ backgroundColor: 'var(--color-primary)', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', textDecoration: 'none' }}>Add Service</Link>
+                <Link to="/provider/listings/new/equipment" className="btn btn-primary" style={{ backgroundColor: 'var(--color-primary)', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', textDecoration: 'none' }}>Add Equipment</Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="bookings-list">
+                {paginatedListings.map(listing => (
+                  <div key={listing.id} className="booking-card" style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {listing.photos && listing.photos.length > 0 ? (
+                      <img src={listing.photos[0]?.startsWith('http') ? listing.photos[0] : `${import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace('/api/v1', '') : 'http://localhost:5000'}${listing.photos[0]}`} alt={listing.title} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px' }} />
+                    ) : (
+                      <div style={{ width: '60px', height: '60px', backgroundColor: '#eee', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: '#64748b' }}>No Img</div>
+                    )}
+                    <div className="booking-info" style={{ flex: 1, minWidth: '150px' }}>
+                      <h4 style={{ margin: 0, fontSize: '1rem', color: '#1e293b' }}>{listing.title}</h4>
+                      <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.875rem' }}>Rs. {listing.price_per_unit}/{listing.unit_label}</p>
+                    </div>
+                    <div className="booking-status">
+                      <span className={`badge badge--${listing.status}`}>{listing.status.replace('_', ' ')}</span>
+                    </div>
+
+                    {/* Actions: View, Edit, Delete */}
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <Link
+                        to={`/listings/${listing.id}`}
+                        target="_blank"
+                        className="btn-icon"
+                        title="Preview Listing"
+                        style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#334155', display: 'inline-flex', alignItems: 'center' }}
+                      >
+                        <ExternalLink size={16} />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(listing)}
+                        className="btn-icon"
+                        title="Edit Listing"
+                        style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #3b82f6', background: '#eff6ff', color: '#1d4ed8', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteListing(listing.id, listing.title)}
+                        disabled={deletingId === listing.id}
+                        className="btn-icon"
+                        title="Delete Listing"
+                        style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#b91c1c', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', opacity: deletingId === listing.id ? 0.5 : 1 }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0' }}>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                    disabled={currentPage === 1}
+                    style={{ padding: '0.4rem 0.85rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', opacity: currentPage === 1 ? 0.5 : 1, fontSize: '0.85rem', fontWeight: 600 }}
+                  >
+                    Previous
+                  </button>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>
+                    Page {currentPage} of {totalPages} ({myListings.length} Total)
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    style={{ padding: '0.4rem 0.85rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', opacity: currentPage === totalPages ? 0.5 : 1, fontSize: '0.85rem', fontWeight: 600 }}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      </div>
+
+      {/* Comprehensive Edit Listing Modal */}
+      {editingListing && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem', overflowY: 'auto' }}>
+          <div style={{ background: '#ffffff', borderRadius: '12px', width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '1.75rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.15)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.35rem', color: '#0f172a' }}>Edit Listing Details</h3>
+              <button onClick={() => setEditingListing(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b' }}>
+                <X size={22} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <ListingPolicyControl listingId={editingListing.id} />
+
+              {/* Title */}
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>Listing Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.title}
+                  onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>Description *</label>
+                <textarea
+                  rows="3"
+                  required
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                />
+              </div>
+
+              {/* Pricing & Unit */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>Price (LKR) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={editFormData.price_per_unit}
+                    onChange={(e) => setEditFormData({ ...editFormData, price_per_unit: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>Unit Label *</label>
+                  <select
+                    value={editFormData.unit_label}
+                    onChange={(e) => setEditFormData({ ...editFormData, unit_label: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#ffffff' }}
+                  >
+                    <option value="day">per day</option>
+                    <option value="hour">per hour</option>
+                    <option value="session">per session</option>
+                    <option value="item">per item</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* District & Location */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>District *</label>
+                  <select
+                    value={editFormData.district}
+                    onChange={(e) => setEditFormData({ ...editFormData, district: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#ffffff' }}
+                  >
+                    {SRI_LANKA_DISTRICTS.map(dist => (
+                      <option key={dist} value={dist}>{dist}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.35rem', color: '#334155' }}>Listing Status</label>
+                  <select
+                    value={editFormData.status}
+                    onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.95rem', background: '#ffffff' }}
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive / Paused</option>
+                    <option value="pending_approval">Pending Approval</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Geolocation Coordinates & Auto-Detect GPS */}
+              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <label style={{ fontWeight: 600, fontSize: '0.875rem', color: '#334155' }}>GPS Geolocation Coordinates</label>
+                  <button
+                    type="button"
+                    onClick={handleDetectGps}
+                    disabled={detectingGps}
+                    style={{ background: '#3b82f6', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '0.35rem 0.75rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    {detectingGps ? 'Detecting...' : ' Auto-Detect My Location'}
+                  </button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Latitude</span>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 6.9271"
+                      value={editFormData.geo_lat}
+                      onChange={(e) => setEditFormData({ ...editFormData, geo_lat: e.target.value })}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Longitude</span>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 79.8612"
+                      value={editFormData.geo_lng}
+                      onChange={(e) => setEditFormData({ ...editFormData, geo_lng: e.target.value })}
+                      style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Photos Management (Cloudinary) */}
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.5rem', color: '#334155' }}>Listing Images (Cloudinary)</label>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                  {editFormData.photos.map((photoUrl, idx) => (
+                    <div key={idx} style={{ position: 'relative', width: '70px', height: '70px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                      <img
+                        src={photoUrl.startsWith('http') ? photoUrl : `http://localhost:5000${photoUrl}`}
+                        alt={`Listing ${idx}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhoto(idx)}
+                        style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(239, 68, 68, 0.9)', color: '#fff', border: 'none', borderRadius: '50%', width: '20px', height: '20px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+
+                  <label style={{ width: '70px', height: '70px', borderRadius: '8px', border: '2px dashed #cbd5e1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: '#f8fafc', color: '#64748b', fontSize: '0.75rem' }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleUploadNewPhotos}
+                      disabled={uploadingPhoto}
+                      style={{ display: 'none' }}
+                    />
+                    {uploadingPhoto ? '...' : '+ Add'}
+                  </label>
+                </div>
+                <small style={{ color: '#64748b', fontSize: '0.75rem' }}>All new uploaded photos go directly to Cloudinary folder (rentify-uploads/listings).</small>
+              </div>
+
+              {/* Form Buttons */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingListing(null)}
+                  style={{ padding: '0.65rem 1.25rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updating || uploadingPhoto}
+                  style={{ padding: '0.65rem 1.35rem', borderRadius: '6px', border: 'none', background: 'var(--color-primary, #3b82f6)', color: '#ffffff', fontWeight: 600, cursor: 'pointer', opacity: (updating || uploadingPhoto) ? 0.6 : 1 }}
+                >
+                  {updating ? 'Saving...' : 'Save All Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ProviderDashboardPage;

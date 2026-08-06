@@ -92,3 +92,11 @@ function App() {
           <Route path="/bookings" element={<ProtectedRoute><BookingHistoryPage /></ProtectedRoute>} />
           <Route path="/bundle-booking" element={<ProtectedRoute allowedRoles={['consumer']}><BundleBookingPage /></ProtectedRoute>} />
 
+          {/* Provider */}
+          <Route path="/provider/dashboard" element={<ProtectedRoute allowedRoles={['provider']}><ProviderDashboardPage /></ProtectedRoute>} />
+          <Route path="/provider/listings/new/service" element={<ProtectedRoute allowedRoles={['provider']}><CreateServiceListingPage /></ProtectedRoute>} />
+          <Route path="/provider/listings/new/equipment" element={<ProtectedRoute allowedRoles={['provider']}><CreateEquipmentListingPage /></ProtectedRoute>} />
+          <Route path="/provider/availability" element={<ProtectedRoute allowedRoles={['provider']}><AvailabilityCalendarPage /></ProtectedRoute>} />
+          <Route path="/provider/earnings" element={<ProtectedRoute allowedRoles={['provider']}><ProviderEarningsPage /></ProtectedRoute>} />
+          <Route path="/provider/booking-requests" element={<ProtectedRoute allowedRoles={['provider']}><BookingRequestsPage /></ProtectedRoute>} />
+
