@@ -87,3 +87,21 @@ const getEarningsSummary = async (req, res, next) => {
          WHERE provider_id = $1 AND created_at >= date_trunc('month', NOW())`, [uid]),
     ]);
 
+    // Fill the last 6 months even when there is no data
+    const map = new Map(monthly.rows.map((r) => [r.month, r.net]));
+    const months = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      months.push({ month: key, net: map.get(key) || 0 });
+    }
+
+    res.status(200).json({
+      summary: { ...totals.rows[0], this_month: thisMonth.rows[0].net },
+      monthly: months,
+      last7Days: daily.rows,
+    });
+  } catch (error) { next(error); }
+};
+

@@ -13,3 +13,17 @@
 .pp-meta span { display: inline-flex; align-items: center; gap: 4px; }
 .pp-bio { margin: 0 0 4px; color: #334155; line-height: 1.5; }
 .pp-bio--clamped { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.pp-bio--empty { color: #94a3b8; font-style: italic; }
+.pp-tabs { display: flex; gap: 4px; margin: 18px 0 12px; border-bottom: 1px solid #e2e8f0; }
+.pp-tabs button { background: none; border: none; padding: 10px 14px; cursor: pointer; font-weight: 600; color: #64748b; border-bottom: 2px solid transparent; }
+.pp-tabs button.active { color: #2563eb; border-bottom-color: #2563eb; }
+.pp-filters { display: flex; gap: 8px; margin-bottom: 12px; }
+.pp-filters select { border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 8px; }
+.pp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.pp-empty { text-align: center; color: #94a3b8; padding: 36px 12px; background: #f8fafc; border-radius: 12px; }
+.pp-pager { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 16px; color: #64748b; font-size: 0.9rem; }
+.pp-summary { display: flex; gap: 24px; align-items: center; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+.pp-summary__score { display: flex; flex-direction: column; align-items: center; min-width: 110px; }
+.pp-summary__score strong { font-size: 2rem; color: #0f172a; }
+.pp-summary__score span:last-child { color: #64748b; font-size: 0.8rem; }
+.pp-summary__bars { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 4px; }

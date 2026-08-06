@@ -11,3 +11,5 @@ const authorize = require('../middleware/role.middleware');
 
 // --- Earnings (must be declared before /:id) ---
 router.get('/me/payouts', authenticate, authorize('provider'), providerController.getPayouts);
+router.get('/me/earnings/bookings', authenticate, authorize('provider'), providerController.getBookingEarnings);
+router.get('/me/earnings/summary', authenticate, authorize('provider'), providerController.getEarningsSummary);

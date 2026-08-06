@@ -115,3 +115,14 @@ function App() {
           <Route path="/messages" element={<ProtectedRoute><MessagingPage /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
 
+          {/* ====================== Error Routes ========================= */}
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
+

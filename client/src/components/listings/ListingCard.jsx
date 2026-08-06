@@ -33,3 +33,21 @@ function ListingCard({ listing = {} }) {
   } = listing;
   const navigate = useNavigate();
 
+  const price = price_per_unit !== undefined ? price_per_unit : pricePerUnit;
+  const unit = unit_label !== undefined ? unit_label : unitLabel;
+  const provider = provider_name !== undefined ? provider_name : providerName;
+  const ratingValue = average_rating !== undefined ? average_rating : (averageRating || 0);
+
+  const photoUrl = getListingCoverImage(listing);
+
+  // Visual star representation
+  const numericRating = Number(ratingValue) || 0;
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    stars.push(
+      <span key={i} className={`star ${i <= Math.round(numericRating) ? 'star--filled' : 'star--empty'}`}>
+        ★
+      </span>
+    );
+  }
+
