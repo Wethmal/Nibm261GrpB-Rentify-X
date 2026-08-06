@@ -8,3 +8,4 @@ const PLATFORM_FEE_RATE = 0.1;
 
 const round2 = (n) => Math.round(Number(n) * 100) / 100;
 
+/** @returns {{gross:number, fee:number, net:number}} */
