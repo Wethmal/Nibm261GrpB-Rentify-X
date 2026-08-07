@@ -128,3 +128,15 @@ const exportPayoutsCsv = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+// ---------- Public provider profile (anyone) ----------
+
+const findPublicProvider = async (id) => {
+  const { rows } = await query(
+    `SELECT id, full_name, bio, profile_photo_url, district, country, trust_score, created_at
+     FROM users
+     WHERE id = $1 AND role = 'provider' AND status = 'verified' AND is_deleted = false`,
+    [id]
+  );
+  return rows[0] || null;
+};
+

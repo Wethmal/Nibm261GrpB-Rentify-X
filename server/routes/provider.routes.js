@@ -15,3 +15,4 @@ router.get('/me/earnings/bookings', authenticate, authorize('provider'), provide
 router.get('/me/earnings/summary', authenticate, authorize('provider'), providerController.getEarningsSummary);
 router.get('/me/earnings/export', authenticate, authorize('provider'), providerController.exportPayoutsCsv);
 
+// --- Public profile ---
