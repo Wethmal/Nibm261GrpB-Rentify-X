@@ -18,3 +18,5 @@ router.get('/me/earnings/export', authenticate, authorize('provider'), providerC
 // --- Public profile ---
 router.get('/:id', providerController.getPublicProvider);
 router.get('/:id/listings', providerController.getPublicProviderListings);
+router.get('/:id/reviews', providerController.getPublicProviderReviews);
+

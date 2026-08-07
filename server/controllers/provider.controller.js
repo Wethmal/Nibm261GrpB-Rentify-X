@@ -160,3 +160,52 @@ const getPublicProvider = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+const getPublicProviderListings = async (req, res, next) => {
+  try {
+    const provider = await findPublicProvider(req.params.id);
+    if (!provider) return res.status(404).json({ error: 'Not Found', message: 'Provider not found' });
+    const { page, limit, offset } = paging(req, 50);
+    const params = [provider.id];
+    let where = "l.provider_id = $1 AND l.status = 'active'";
+    if (['service', 'equipment'].includes(req.query.type)) { params.push(req.query.type); where += ` AND l.type = $${params.length}`; }
+    const order = req.query.sort === 'rating' ? 'l.average_rating DESC NULLS LAST, l.created_at DESC'
+      : req.query.sort === 'popularity' ? 'l.review_count DESC NULLS LAST, l.created_at DESC'
+      : 'l.created_at DESC';
+    const total = await query(`SELECT COUNT(*)::int AS c FROM listings l WHERE ${where}`, params);
+    const { rows } = await query(
+      `SELECT l.id, l.title, l.type, l.price_per_unit, l.unit_label, l.district, l.photos, l.average_rating, l.review_count, c.name AS category_name
+       FROM listings l LEFT JOIN categories c ON c.id = l.category_id
+       WHERE ${where} ORDER BY ${order} LIMIT ${limit} OFFSET ${offset}`,
+      params
+    );
+    res.status(200).json({ listings: rows, total: total.rows[0].c, page, limit });
+  } catch (error) { next(error); }
+};
+
+const getPublicProviderReviews = async (req, res, next) => {
+  try {
+    const provider = await findPublicProvider(req.params.id);
+    if (!provider) return res.status(404).json({ error: 'Not Found', message: 'Provider not found' });
+    const { page, limit, offset } = paging(req, 50);
+    const order = req.query.sort === 'highest' ? 'r.rating DESC, r.created_at DESC'
+      : req.query.sort === 'lowest' ? 'r.rating ASC, r.created_at DESC'
+      : 'r.created_at DESC';
+    const total = await query("SELECT COUNT(*)::int AS c FROM reviews WHERE reviewee_id = $1 AND status = 'approved'", [provider.id]);
+    const dist = await query(
+      "SELECT rating, COUNT(*)::int AS c FROM reviews WHERE reviewee_id = $1 AND status = 'approved' GROUP BY rating", [provider.id]);
+    const { rows } = await query(
+      `SELECT r.id, r.rating, r.comment, r.created_at, u.full_name AS reviewer_name, u.profile_photo_url AS reviewer_avatar,
+              l.title AS listing_title
+       FROM reviews r
+       LEFT JOIN users u ON u.id = r.reviewer_id
+       LEFT JOIN listings l ON l.id = r.listing_id
+       WHERE r.reviewee_id = $1 AND r.status = 'approved'
+       ORDER BY ${order} LIMIT ${limit} OFFSET ${offset}`,
+      [provider.id]
+    );
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    dist.rows.forEach((d) => { distribution[d.rating] = d.c; });
+    res.status(200).json({ reviews: rows, total: total.rows[0].c, page, limit, distribution });
+  } catch (error) { next(error); }
+};
+
