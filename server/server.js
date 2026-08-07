@@ -109,3 +109,8 @@ app.use('/api/v1/providers', providerRoutes);
 app.use('/api/v1/realtime', realtimeRoutes);
 
 // --- Global Error Handler (must be last middleware) ---
+app.use(errorMiddleware);
+
+// --- Start Server (only when not imported for testing) ---
+const PORT = process.env.PORT || 5000;
+

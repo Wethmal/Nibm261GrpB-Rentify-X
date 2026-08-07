@@ -102,3 +102,16 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS nic_reviewed_at TIMESTAMP WITH TIME Z
 -- ---------- Listing suspension reason (US20) ----------
 ALTER TABLE listings ADD COLUMN IF NOT EXISTS suspension_reason TEXT;
 
+-- ---------- Multi-equipment bundles (US13) ----------
+CREATE TABLE IF NOT EXISTS booking_equipment (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    listing_id UUID NOT NULL REFERENCES listings(id) ON DELETE RESTRICT,
+    price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    UNIQUE (booking_id, listing_id)
+);
+CREATE INDEX IF NOT EXISTS idx_booking_equipment_listing ON booking_equipment(listing_id);
+
+-- ---------- Message delivery status (US17) ----------
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS read_at TIMESTAMP WITH TIME ZONE;

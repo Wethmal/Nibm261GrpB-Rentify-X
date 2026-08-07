@@ -93,3 +93,130 @@ const submitReport = async (req, res, next) => {
 
 // ---------- Admin ----------
 
+const listReports = async (req, res, next) => {
+  try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
+    const offset = (page - 1) * limit;
+    const params = [];
+    const where = [];
+    if (req.query.status && req.query.status !== 'all') { params.push(req.query.status); where.push(`r.status = $${params.length}`); }
+    if (req.query.reason) { params.push(req.query.reason); where.push(`r.reason = $${params.length}`); }
+    const w = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const total = await query(`SELECT COUNT(*)::int AS c FROM user_reports r ${w}`, params);
+    const { rows } = await query(
+      `SELECT r.id, r.reason, r.status, r.description, r.created_at, r.resolved_at,
+              r.reporter_id, rp.full_name AS reporter_name,
+              r.reported_user_id, rd.full_name AS reported_name, rd.status AS reported_status, rd.role AS reported_role,
+              (SELECT COUNT(*)::int FROM user_reports x WHERE x.reported_user_id = r.reported_user_id) AS reports_against_user
+       FROM user_reports r
+       LEFT JOIN users rp ON rp.id = r.reporter_id
+       LEFT JOIN users rd ON rd.id = r.reported_user_id
+       ${w}
+       ORDER BY (r.status = 'pending') DESC, r.created_at DESC
+       LIMIT ${limit} OFFSET ${offset}`,
+      params
+    );
+    const counts = await query('SELECT status, COUNT(*)::int AS c FROM user_reports GROUP BY status');
+    res.status(200).json({ reports: rows, total: total.rows[0].c, page, limit, counts: Object.fromEntries(counts.rows.map((r) => [r.status, r.c])) });
+  } catch (error) { next(error); }
+};
+
+const getReport = async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT r.*,
+              rp.full_name AS reporter_name, rp.email AS reporter_email, rp.role AS reporter_role,
+              rd.full_name AS reported_name, rd.email AS reported_email, rd.role AS reported_role,
+              rd.status AS reported_status, rd.status_reason AS reported_status_reason, rd.suspended_until AS reported_suspended_until,
+              rd.trust_score AS reported_trust_score, rd.created_at AS reported_joined
+       FROM user_reports r
+       LEFT JOIN users rp ON rp.id = r.reporter_id
+       LEFT JOIN users rd ON rd.id = r.reported_user_id
+       WHERE r.id = $1`, [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Not Found', message: 'Report not found' });
+    const [others, history] = await Promise.all([
+      query(
+        `SELECT id, reason, status, created_at FROM user_reports
+         WHERE reported_user_id = $1 AND id <> $2 ORDER BY created_at DESC LIMIT 20`, [rows[0].reported_user_id, req.params.id]),
+      query(
+        `SELECT id, action, details, created_at FROM admin_audit_logs
+         WHERE target_type = 'user' AND target_id = $1 ORDER BY created_at DESC LIMIT 20`, [rows[0].reported_user_id]),
+    ]);
+    res.status(200).json({ report: rows[0], otherReports: others.rows, moderationHistory: history.rows });
+  } catch (error) { next(error); }
+};
+
+const ACTIONS = ['dismiss', 'resolve', 'warn', 'suspend', 'ban', 'review'];
+
+const resolveReport = async (req, res, next) => {
+  try {
+    const { action, note, days } = req.body || {};
+    if (!ACTIONS.includes(action)) {
+      return res.status(400).json({ error: 'Bad Request', message: `action must be one of: ${ACTIONS.join(', ')}` });
+    }
+    const trimmed = String(note || '').trim();
+    if (action !== 'review' && trimmed.length < 5) {
+      return res.status(400).json({ error: 'Bad Request', message: 'A resolution note is required' });
+    }
+
+    const found = await query('SELECT * FROM user_reports WHERE id = $1', [req.params.id]);
+    const report = found.rows[0];
+    if (!report) return res.status(404).json({ error: 'Not Found', message: 'Report not found' });
+    if (['resolved', 'dismissed'].includes(report.status)) {
+      return res.status(409).json({ error: 'Conflict', message: 'This report has already been closed' });
+    }
+
+    if (action === 'review') {
+      const r = await query("UPDATE user_reports SET status = 'reviewing', admin_id = $2, updated_at = NOW() WHERE id = $1 RETURNING *", [report.id, req.user.userId]);
+      await audit.record(req.user.userId, 'report_reviewing', 'report', report.id, {});
+      return res.status(200).json({ report: r.rows[0] });
+    }
+
+    let restrictedUser = null;
+    if (action === 'suspend') {
+      try { restrictedUser = await restriction.suspend(report.reported_user_id, days, trimmed); }
+      catch (e) { return res.status(e.status || 500).json({ error: 'Bad Request', message: e.message }); }
+    } else if (action === 'ban') {
+      restrictedUser = await restriction.ban(report.reported_user_id, trimmed);
+    }
+
+    const newStatus = action === 'dismiss' ? 'dismissed' : 'resolved';
+    const updated = await query(
+      `UPDATE user_reports SET status = $2, admin_id = $3, resolution_note = $4, resolved_at = NOW(), updated_at = NOW()
+       WHERE id = $1 RETURNING *`,
+      [report.id, newStatus, req.user.userId, trimmed]
+    );
+
+    await audit.record(req.user.userId, `report_${action}`, 'user', report.reported_user_id, {
+      reportId: report.id, reason: report.reason, note: trimmed, days: action === 'suspend' ? Number(days) : undefined,
+    });
+
+    res.status(200).json({ report: updated.rows[0], restrictedUser });
+
+    // Notify both parties
+    const outcome = { dismiss: 'was reviewed and dismissed', resolve: 'was reviewed and resolved', warn: 'was resolved with a warning', suspend: 'was resolved: the user was suspended', ban: 'was resolved: the user was banned' }[action];
+    notifySafe({ user_id: report.reporter_id, type: 'report_update', title: 'Your report was reviewed', body: `Your report ${outcome}.`, metadata: { reportId: report.id } });
+    if (action !== 'dismiss') {
+      const msg = action === 'warn' ? `An administrator issued you a warning: ${trimmed}`
+        : action === 'suspend' ? `Your account was suspended for ${Number(days)} day(s): ${trimmed}`
+        : action === 'ban' ? `Your account was banned: ${trimmed}` : 'A report against you was reviewed by an administrator.';
+      notifySafe({ user_id: report.reported_user_id, type: 'moderation_notice', title: 'Moderation notice', body: msg, metadata: { reportId: report.id } });
+    }
+  } catch (error) { next(error); }
+};
+
+const listAuditLogs = async (req, res, next) => {
+  try {
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+    const params = [];
+    let w = '';
+    if (req.query.targetId) { params.push(req.query.targetId); w = 'WHERE a.target_id = $1'; }
+    const { rows } = await query(
+      `SELECT a.*, u.full_name AS admin_name FROM admin_audit_logs a LEFT JOIN users u ON u.id = a.admin_id
+       ${w} ORDER BY a.created_at DESC LIMIT ${limit}`, params);
+    res.status(200).json({ logs: rows });
+  } catch (error) { next(error); }
+};
+
+module.exports = { REASONS, submitReport, listReports, getReport, resolveReport, listAuditLogs };

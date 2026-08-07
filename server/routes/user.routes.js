@@ -21,3 +21,30 @@ const validate = require('../middleware/validate.middleware');
 router.post('/:id/report', authenticate, require('../controllers/report.controller').submitReport);
 
 // GET /api/v1/users/me — Get current authenticated user's profile
+router.get('/me', authenticate, userController.getProfile);
+
+// PUT /api/v1/users/:id — Update user's profile
+router.put('/:id', authenticate, [
+  body('full_name').optional().isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
+  body('bio').optional({ nullable: true }).isLength({ max: 500 }).withMessage('Bio cannot exceed 500 characters'),
+  body('mobile').optional({ checkFalsy: true }).matches(/^(?:\+94|0)7\d{8}$/).withMessage('Invalid Sri Lanka mobile number'),
+  body('address').optional({ nullable: true }).isString(),
+  body('district').optional({ nullable: true }).isString(),
+  body('country').optional({ nullable: true }).isString()
+], validate, userController.updateProfile);
+
+// POST /api/v1/users/:id/avatar — Upload user avatar
+router.post('/:id/avatar', authenticate, require('../middleware/upload.middleware').uploadSingle, userController.uploadAvatar);
+
+const optionalAuthenticate = require('../middleware/optionalAuth.middleware');
+
+// GET /api/v1/users/:id — Get public profile by user ID
+router.get('/:id', optionalAuthenticate, userController.getPublicProfile);
+
+// GET /api/v1/users/:id/bookings — Get booking history for a user
+router.get('/:id/bookings', authenticate, userController.getBookingHistory);
+
+// POST /api/v1/users/:id/nic-upload — Upload NIC document
+router.post('/:id/nic-upload', authenticate, uploadNic, userController.uploadNicDocument);
+
+module.exports = router;
