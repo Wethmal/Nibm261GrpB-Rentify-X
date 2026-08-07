@@ -44,3 +44,7 @@ router.get('/:id', optionalAuthenticate, userController.getPublicProfile);
 // GET /api/v1/users/:id/bookings — Get booking history for a user
 router.get('/:id/bookings', authenticate, userController.getBookingHistory);
 
+// POST /api/v1/users/:id/nic-upload — Upload NIC document
+router.post('/:id/nic-upload', authenticate, uploadNic, userController.uploadNicDocument);
+
+module.exports = router;

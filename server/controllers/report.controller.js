@@ -194,3 +194,29 @@ const resolveReport = async (req, res, next) => {
 
     res.status(200).json({ report: updated.rows[0], restrictedUser });
 
+    // Notify both parties
+    const outcome = { dismiss: 'was reviewed and dismissed', resolve: 'was reviewed and resolved', warn: 'was resolved with a warning', suspend: 'was resolved: the user was suspended', ban: 'was resolved: the user was banned' }[action];
+    notifySafe({ user_id: report.reporter_id, type: 'report_update', title: 'Your report was reviewed', body: `Your report ${outcome}.`, metadata: { reportId: report.id } });
+    if (action !== 'dismiss') {
+      const msg = action === 'warn' ? `An administrator issued you a warning: ${trimmed}`
+        : action === 'suspend' ? `Your account was suspended for ${Number(days)} day(s): ${trimmed}`
+        : action === 'ban' ? `Your account was banned: ${trimmed}` : 'A report against you was reviewed by an administrator.';
+      notifySafe({ user_id: report.reported_user_id, type: 'moderation_notice', title: 'Moderation notice', body: msg, metadata: { reportId: report.id } });
+    }
+  } catch (error) { next(error); }
+};
+
+const listAuditLogs = async (req, res, next) => {
+  try {
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+    const params = [];
+    let w = '';
+    if (req.query.targetId) { params.push(req.query.targetId); w = 'WHERE a.target_id = $1'; }
+    const { rows } = await query(
+      `SELECT a.*, u.full_name AS admin_name FROM admin_audit_logs a LEFT JOIN users u ON u.id = a.admin_id
+       ${w} ORDER BY a.created_at DESC LIMIT ${limit}`, params);
+    res.status(200).json({ logs: rows });
+  } catch (error) { next(error); }
+};
+
+module.exports = { REASONS, submitReport, listReports, getReport, resolveReport, listAuditLogs };
