@@ -20,3 +20,4 @@ router.get('/:id', providerController.getPublicProvider);
 router.get('/:id/listings', providerController.getPublicProviderListings);
 router.get('/:id/reviews', providerController.getPublicProviderReviews);
 
+module.exports = router;

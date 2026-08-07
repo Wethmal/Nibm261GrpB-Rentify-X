@@ -209,3 +209,7 @@ const getPublicProviderReviews = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+module.exports = {
+  getPayouts, getBookingEarnings, getEarningsSummary, exportPayoutsCsv,
+  getPublicProvider, getPublicProviderListings, getPublicProviderReviews,
+};
