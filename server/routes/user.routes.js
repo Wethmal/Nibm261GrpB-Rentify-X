@@ -33,3 +33,9 @@ router.put('/:id', authenticate, [
   body('country').optional({ nullable: true }).isString()
 ], validate, userController.updateProfile);
 
+// POST /api/v1/users/:id/avatar — Upload user avatar
+router.post('/:id/avatar', authenticate, require('../middleware/upload.middleware').uploadSingle, userController.uploadAvatar);
+
+const optionalAuthenticate = require('../middleware/optionalAuth.middleware');
+
+// GET /api/v1/users/:id — Get public profile by user ID

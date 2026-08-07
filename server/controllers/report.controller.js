@@ -149,3 +149,35 @@ const getReport = async (req, res, next) => {
 
 const ACTIONS = ['dismiss', 'resolve', 'warn', 'suspend', 'ban', 'review'];
 
+const resolveReport = async (req, res, next) => {
+  try {
+    const { action, note, days } = req.body || {};
+    if (!ACTIONS.includes(action)) {
+      return res.status(400).json({ error: 'Bad Request', message: `action must be one of: ${ACTIONS.join(', ')}` });
+    }
+    const trimmed = String(note || '').trim();
+    if (action !== 'review' && trimmed.length < 5) {
+      return res.status(400).json({ error: 'Bad Request', message: 'A resolution note is required' });
+    }
+
+    const found = await query('SELECT * FROM user_reports WHERE id = $1', [req.params.id]);
+    const report = found.rows[0];
+    if (!report) return res.status(404).json({ error: 'Not Found', message: 'Report not found' });
+    if (['resolved', 'dismissed'].includes(report.status)) {
+      return res.status(409).json({ error: 'Conflict', message: 'This report has already been closed' });
+    }
+
+    if (action === 'review') {
+      const r = await query("UPDATE user_reports SET status = 'reviewing', admin_id = $2, updated_at = NOW() WHERE id = $1 RETURNING *", [report.id, req.user.userId]);
+      await audit.record(req.user.userId, 'report_reviewing', 'report', report.id, {});
+      return res.status(200).json({ report: r.rows[0] });
+    }
+
+    let restrictedUser = null;
+    if (action === 'suspend') {
+      try { restrictedUser = await restriction.suspend(report.reported_user_id, days, trimmed); }
+      catch (e) { return res.status(e.status || 500).json({ error: 'Bad Request', message: e.message }); }
+    } else if (action === 'ban') {
+      restrictedUser = await restriction.ban(report.reported_user_id, trimmed);
+    }
+
