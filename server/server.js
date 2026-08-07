@@ -114,3 +114,10 @@ app.use(errorMiddleware);
 // --- Start Server (only when not imported for testing) ---
 const PORT = process.env.PORT || 5000;
 
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`[Rentify] Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+  });
+}
+
+module.exports = app;

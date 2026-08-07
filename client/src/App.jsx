@@ -100,3 +100,30 @@ function App() {
           <Route path="/provider/earnings" element={<ProtectedRoute allowedRoles={['provider']}><ProviderEarningsPage /></ProtectedRoute>} />
           <Route path="/provider/booking-requests" element={<ProtectedRoute allowedRoles={['provider']}><BookingRequestsPage /></ProtectedRoute>} />
 
+          {/* Admin */}
+          <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboardPage /></ProtectedRoute>} />
+          <Route path="/admin/provider-approvals" element={<ProtectedRoute allowedRoles={['admin']}><ProviderApprovalPage /></ProtectedRoute>} />
+          <Route path="/admin/nic-verification" element={<ProtectedRoute allowedRoles={['admin']}><NICVerificationPage /></ProtectedRoute>} />
+          <Route path="/admin/listing-moderation" element={<ProtectedRoute allowedRoles={['admin']}><ListingModerationPage /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><UserManagementPage /></ProtectedRoute>} />
+          <Route path="/admin/disputes" element={<ProtectedRoute allowedRoles={['admin']}><DisputesPage /></ProtectedRoute>} />
+          <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['admin']}><ReportsPage /></ProtectedRoute>} />
+          <Route path="/admin/categories" element={<ProtectedRoute allowedRoles={['admin']}><CategoryManagementPage /></ProtectedRoute>} />
+
+          {/* Shared (any authenticated user) */}
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/messages" element={<ProtectedRoute><MessagingPage /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+
+          {/* ====================== Error Routes ========================= */}
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
+
+export default App;
