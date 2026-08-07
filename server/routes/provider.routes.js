@@ -16,3 +16,5 @@ router.get('/me/earnings/summary', authenticate, authorize('provider'), provider
 router.get('/me/earnings/export', authenticate, authorize('provider'), providerController.exportPayoutsCsv);
 
 // --- Public profile ---
+router.get('/:id', providerController.getPublicProvider);
+router.get('/:id/listings', providerController.getPublicProviderListings);

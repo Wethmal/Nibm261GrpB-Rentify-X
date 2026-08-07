@@ -140,3 +140,23 @@ const findPublicProvider = async (id) => {
   return rows[0] || null;
 };
 
+const getPublicProvider = async (req, res, next) => {
+  try {
+    const provider = await findPublicProvider(req.params.id);
+    if (!provider) return res.status(404).json({ error: 'Not Found', message: 'Provider not found' });
+    const stats = await query(
+      `SELECT COUNT(*)::int AS review_count, COALESCE(AVG(rating), 0)::numeric(3,2) AS average_rating
+       FROM reviews WHERE reviewee_id = $1 AND status = 'approved'`, [provider.id]);
+    const listings = await query(
+      "SELECT COUNT(*)::int AS c FROM listings WHERE provider_id = $1 AND status = 'active'", [provider.id]);
+    res.status(200).json({
+      provider: {
+        ...provider,
+        review_count: stats.rows[0].review_count,
+        average_rating: Number(stats.rows[0].average_rating),
+        active_listing_count: listings.rows[0].c,
+      },
+    });
+  } catch (error) { next(error); }
+};
+
