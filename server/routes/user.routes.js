@@ -39,3 +39,8 @@ router.post('/:id/avatar', authenticate, require('../middleware/upload.middlewar
 const optionalAuthenticate = require('../middleware/optionalAuth.middleware');
 
 // GET /api/v1/users/:id — Get public profile by user ID
+router.get('/:id', optionalAuthenticate, userController.getPublicProfile);
+
+// GET /api/v1/users/:id/bookings — Get booking history for a user
+router.get('/:id/bookings', authenticate, userController.getBookingHistory);
+

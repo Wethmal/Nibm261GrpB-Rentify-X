@@ -181,3 +181,16 @@ const resolveReport = async (req, res, next) => {
       restrictedUser = await restriction.ban(report.reported_user_id, trimmed);
     }
 
+    const newStatus = action === 'dismiss' ? 'dismissed' : 'resolved';
+    const updated = await query(
+      `UPDATE user_reports SET status = $2, admin_id = $3, resolution_note = $4, resolved_at = NOW(), updated_at = NOW()
+       WHERE id = $1 RETURNING *`,
+      [report.id, newStatus, req.user.userId, trimmed]
+    );
+
+    await audit.record(req.user.userId, `report_${action}`, 'user', report.reported_user_id, {
+      reportId: report.id, reason: report.reason, note: trimmed, days: action === 'suspend' ? Number(days) : undefined,
+    });
+
+    res.status(200).json({ report: updated.rows[0], restrictedUser });
+
