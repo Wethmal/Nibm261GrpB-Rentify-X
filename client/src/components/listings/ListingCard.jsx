@@ -51,3 +51,50 @@ function ListingCard({ listing = {} }) {
     );
   }
 
+  return (
+    <div className={`listing-card listing-card--${type}`}>
+      <Link to={`/listings/${id || '#'}`} className="listing-card__link">
+        <div className="listing-card__image-container">
+          <img src={photoUrl} alt={title} className="listing-card__image" onError={(e) => { e.target.src = 'https://placehold.co/400x300?text=No+Image'; }} />
+          <span className={`listing-card__type-badge listing-card__type-badge--${type}`}>{type}</span>
+          {condition && <span className={`listing-card__condition-badge listing-card__condition-badge--${condition.toLowerCase()}`}>{condition}</span>}
+        </div>
+        <div className="listing-card__content">
+          <div className="listing-card__header">
+            <span className="listing-card__district">{district}</span>
+            <div className="listing-card__rating">
+              {stars}
+              <span className="listing-card__rating-text">({numericRating.toFixed(1)})</span>
+            </div>
+          </div>
+          <h3 className="listing-card__title">{title}</h3>
+          <div className="listing-card__provider">
+            By{' '}
+            {provider_id ? (
+              <span
+                className="listing-card__provider-name"
+                role="link"
+                tabIndex={0}
+                style={{ textDecoration: 'underline', cursor: 'pointer' }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/providers/${provider_id}`); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); navigate(`/providers/${provider_id}`); } }}
+              >
+                {provider || 'Verified Partner'}
+              </span>
+            ) : (
+              <span className="listing-card__provider-name">{provider || 'Verified Partner'}</span>
+            )}
+          </div>
+          <div className="listing-card__footer">
+            <div className="listing-card__price-container">
+              <span className="listing-card__price">{formatCurrency(price)}</span>
+              <span className="listing-card__unit"> / {unit || 'unit'}</span>
+            </div>
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
+}
+
+export default ListingCard;

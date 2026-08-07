@@ -27,3 +27,17 @@
 .pp-summary__score strong { font-size: 2rem; color: #0f172a; }
 .pp-summary__score span:last-child { color: #64748b; font-size: 0.8rem; }
 .pp-summary__bars { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 4px; }
+.pp-bar { display: grid; grid-template-columns: 28px 1fr 28px; gap: 8px; align-items: center; font-size: 0.8rem; color: #64748b; }
+.pp-bar div { background: #e2e8f0; border-radius: 999px; height: 8px; overflow: hidden; }
+.pp-bar i { display: block; height: 100%; background: #f59e0b; }
+.pp-reviews { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.pp-reviews li { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; }
+.pp-review__head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pp-review__head time { margin-left: auto; color: #94a3b8; font-size: 0.8rem; }
+.pp-review__listing { color: #64748b; font-size: 0.82rem; }
+.pp-reviews p { margin: 6px 0 0; color: #334155; }
+.pp-actionbar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid #e2e8f0; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; gap: 10px; z-index: 900; box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08); }
+.pp-actionbar__name { font-weight: 700; color: #0f172a; }
+.pp-actionbar__buttons { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pp-actionbar__buttons .fx-btn { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 640px) { .pp-hero { flex-direction: column; align-items: center; text-align: center; } .pp-meta { justify-content: center; } .pp-actionbar__name { display: none; } }
