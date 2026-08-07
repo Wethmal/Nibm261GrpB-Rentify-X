@@ -209,3 +209,210 @@ const refresh = async (req, res, next) => {
 
     await refreshModel.create(user.id, newRefreshTokenString, newExpiresAt);
 
+    res.cookie('refreshToken', newRefreshTokenString, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.status(200).json({ token: newAccessToken });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const sendOtp = async (req, res, next) => {
+  try {
+    const { mobile } = req.body;
+    const code = await otpService.generate(mobile);
+    res.status(200).json({
+      message: 'OTP sent successfully',
+      devCode: process.env.NODE_ENV !== 'production' ? code : undefined
+    });
+  } catch (error) {
+    if (error.message.includes('Please wait')) {
+      return res.status(429).json({ error: error.message });
+    }
+    next(error);
+  }
+};
+
+const verifyOtp = async (req, res, next) => {
+  try {
+    const { mobile, otpCode } = req.body;
+    const verification = await otpService.verify(mobile, String(otpCode));
+
+    if (!verification.valid) {
+      return res.status(400).json({ error: verification.message });
+    }
+
+    const user = await userModel.findByMobile(mobile);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.status === 'pending_verification') {
+      await userModel.updateStatus(user.id, 'verified');
+      user.status = 'verified';
+    }
+
+    const token = authService.generateToken({ userId: user.id, role: user.role, status: user.status });
+
+    res.status(200).json({
+      message: 'OTP verified successfully',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        name: user.full_name,
+        mobile: user.mobile,
+        profile_photo_url: user.profile_photo_url
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const requestPasswordReset = async (req, res, next) => {
+  try {
+    const { email, mobile } = req.body;
+    const identifier = email || mobile;
+    if (!identifier) {
+      return res.status(400).json({ error: 'Email or mobile is required' });
+    }
+
+    const user = await userModel.findByEmailOrMobile(identifier);
+    if (!user) {
+      // Prevent enumeration: return 200 even if user doesn't exist
+      return res.status(200).json({ message: 'If an account with that identifier exists, a reset link has been sent.' });
+    }
+
+    // Generate secure 64-char hex token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    // 1-hour expiry
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+
+    await passwordResetTokenModel.create(user.id, tokenHash, expiresAt);
+
+    // Send email
+    const resetUrl = `https://${req.headers.host || 'localhost'}/reset-password?token=${resetToken}`;
+    const emailBody = `<p>You requested a password reset. Click the link below to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>This link will expire in 1 hour.</p>`;
+
+    if (user.email) {
+      await notificationService.sendEmail(user.email, 'Password Reset Request', emailBody);
+    }
+
+    res.status(200).json({ message: 'If an account with that identifier exists, a reset link has been sent.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const tokenDoc = await passwordResetTokenModel.findByHash(tokenHash);
+
+    if (!tokenDoc || tokenDoc.is_used || new Date(tokenDoc.expires_at) < new Date()) {
+      return res.status(410).json({ error: 'Reset token is invalid or has expired' });
+    }
+
+    const newPasswordHash = await authService.hashPassword(newPassword);
+    await userModel.updatePassword(tokenDoc.user_id, newPasswordHash);
+
+    await passwordResetTokenModel.markAsUsed(tokenDoc.id);
+    await refreshModel.revokeAllForUser(tokenDoc.user_id);
+
+    const user = await userModel.findById(tokenDoc.user_id);
+    if (user && user.email) {
+      await notificationService.sendEmail(user.email, 'Password Reset Successful', '<p>Your password has been successfully reset.</p>');
+    }
+
+    res.status(200).json({ message: 'Password reset successful' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verify2faLogin = async (req, res, next) => {
+  try {
+    const { preAuthToken, otpCode } = req.body;
+    let decoded;
+    try {
+      decoded = authService.verifyToken(preAuthToken);
+    } catch (e) {
+      return res.status(401).json({ error: 'Invalid or expired pre-auth token' });
+    }
+
+    if (!decoded.isPreAuth) {
+      return res.status(401).json({ error: 'Invalid token type' });
+    }
+
+    const user = await userModel.findById(decoded.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const verification = await otpService.verify(user.mobile, String(otpCode));
+    if (!verification.valid) {
+      return res.status(400).json({ error: verification.message });
+    }
+
+    const token = authService.generateToken(
+      { userId: user.id, role: user.role, status: user.status },
+      { expiresIn: '24h' }
+    );
+
+    const refreshTokenString = crypto.randomBytes(40).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await refreshModel.create(user.id, refreshTokenString, expiresAt);
+
+    res.cookie('refreshToken', refreshTokenString, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.status(200).json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        name: user.full_name,
+        mobile: user.mobile,
+        profile_photo_url: user.profile_photo_url
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const toggle2fa = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    const { enabled } = req.body;
+
+    await userModel.update2faStatus(userId, enabled);
+
+    res.status(200).json({ message: `2FA ${enabled ? 'enabled' : 'disabled'} successfully`, is_2fa_enabled: enabled });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { register, login, refresh, sendOtp, verifyOtp, requestPasswordReset, resetPassword, verify2faLogin, toggle2fa };

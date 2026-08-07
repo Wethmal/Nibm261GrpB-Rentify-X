@@ -23,3 +23,24 @@ router.get('/', authenticate, bookingController.getAll);
 router.get('/:id', authenticate, bookingController.getById);
 
 // PUT /api/v1/bookings/:id/accept — Accept a booking request (provider)
+router.put('/:id/accept', authenticate, bookingController.accept);
+
+// PUT /api/v1/bookings/:id/reject — Reject a booking request (provider)
+router.put('/:id/reject', authenticate, bookingController.reject);
+
+// PUT /api/v1/bookings/:id/cancel — Cancel a booking (consumer or provider)
+router.put('/:id/cancel', authenticate, cancellation.cancelAny);
+
+// POST /api/v1/bookings/:id/cancel — Consumer cancellation with policy-based refund
+router.post('/:id/cancel', authenticate, cancellation.cancelByConsumer);
+
+// POST /api/v1/bookings/:id/cancel-by-provider — Provider cancellation (always full refund)
+router.post('/:id/cancel-by-provider', authenticate, cancellation.cancelByProvider);
+
+// GET /api/v1/bookings/:id/cancellation-preview — Refund preview for the consumer (no side effects)
+router.get('/:id/cancellation-preview', authenticate, cancellation.getPreview);
+
+// PUT /api/v1/bookings/:id/complete — Mark booking as completed (provider)
+router.put('/:id/complete', authenticate, bookingController.complete);
+
+module.exports = router;

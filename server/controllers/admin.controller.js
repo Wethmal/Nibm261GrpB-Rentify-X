@@ -180,3 +180,239 @@ const getUsers = async (req, res, next) => {
   }
 };
 
+const banUser = async (req, res, next) => {
+  try {
+    if (req.params.id === req.user.userId) {
+      return res.status(400).json({ error: 'Bad Request', message: 'You cannot ban your own account' });
+    }
+    const reason = String(req.body.reason || '').trim() || 'Banned by admin';
+    const user = await restriction.ban(req.params.id, reason);
+    if (!user) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    await audit.record(req.user.userId, 'user_banned', 'user', req.params.id, { reason });
+    await notificationModel.create({ user_id: req.params.id, type: 'moderation_notice', title: 'Account banned', body: reason, metadata: {} });
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const suspendUser = async (req, res, next) => {
+  try {
+    if (req.params.id === req.user.userId) {
+      return res.status(400).json({ error: 'Bad Request', message: 'You cannot suspend your own account' });
+    }
+    const reason = String(req.body.reason || '').trim() || 'Suspended by admin';
+    const days = req.body.days === undefined ? 7 : req.body.days;
+    let user;
+    try { user = await restriction.suspend(req.params.id, days, reason); }
+    catch (e) { return res.status(e.status || 500).json({ error: 'Bad Request', message: e.message }); }
+    if (!user) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    await audit.record(req.user.userId, 'user_suspended', 'user', req.params.id, { reason, days: Number(days) });
+    await notificationModel.create({
+      user_id: req.params.id, type: 'moderation_notice', title: 'Account suspended',
+      body: `Your account is suspended for ${Number(days)} day(s): ${reason}`, metadata: {}
+    });
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const reinstateUser = async (req, res, next) => {
+  try {
+    const user = await restriction.reinstate(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    await audit.record(req.user.userId, 'user_reinstated', 'user', req.params.id, {});
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getUserDetail = async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, email, mobile, role, status, status_reason, suspended_until, banned_at, full_name, district, trust_score, created_at
+       FROM users WHERE id = $1 AND is_deleted = false`, [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    const [reports, logs] = await Promise.all([
+      query('SELECT id, reason, status, created_at FROM user_reports WHERE reported_user_id = $1 ORDER BY created_at DESC LIMIT 20', [req.params.id]),
+      query("SELECT id, action, details, created_at FROM admin_audit_logs WHERE target_type = 'user' AND target_id = $1 ORDER BY created_at DESC LIMIT 20", [req.params.id]),
+    ]);
+    res.status(200).json({ user: rows[0], reports: reports.rows, moderationHistory: logs.rows });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getNICVerificationDetail = async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, email, mobile, full_name, role, status, district, address, nic_number, nic_document_url,
+              nic_review_note, nic_reviewed_at, created_at
+       FROM users WHERE id = $1 AND is_deleted = false`, [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    res.status(200).json({ verification: rows[0] });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const decideNICVerification = async (req, res, next) => {
+  try {
+    const { decision } = req.body;
+    const note = String(req.body.note || '').trim();
+    if (!['approve', 'reject'].includes(decision)) {
+      return res.status(400).json({ error: 'Bad Request', message: "decision must be 'approve' or 'reject'" });
+    }
+    if (note.length < 3) {
+      return res.status(400).json({ error: 'Bad Request', message: 'A review note is required' });
+    }
+    const approve = decision === 'approve';
+    // Approve -> verified. Reject -> stay pending but clear the document so the user can re-upload.
+    const { rows } = await query(
+      `UPDATE users
+       SET status = CASE WHEN $2 THEN 'verified' ELSE status END,
+           nic_document_url = CASE WHEN $2 THEN nic_document_url ELSE NULL END,
+           nic_review_note = $3, nic_reviewed_at = NOW(), updated_at = NOW()
+       WHERE id = $1 AND is_deleted = false
+       RETURNING id, email, full_name, status, nic_review_note`,
+      [req.params.id, approve, note]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Not Found', message: 'User not found' });
+    await audit.record(req.user.userId, approve ? 'nic_approved' : 'nic_rejected', 'user', req.params.id, { note });
+    await notificationModel.create({
+      user_id: req.params.id,
+      type: approve ? 'nic_approved' : 'nic_rejected',
+      title: approve ? 'Identity verified' : 'Identity verification rejected',
+      body: approve ? 'Your NIC was verified. Your account is now trusted.' : `Your NIC upload was rejected: ${note}. Please upload a clearer document.`,
+      metadata: { note }
+    });
+    res.status(200).json({ user: rows[0] });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getCategories = async (req, res, next) => {
+  try {
+    const categories = await categoryModel.findAll(true);
+    res.status(200).json({ categories });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createCategory = async (req, res, next) => {
+  try {
+    const { name, type, parent_id } = req.body;
+    if (!name || !['service', 'equipment'].includes(type)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Valid name and type are required' });
+    }
+    const category = await categoryModel.create({ name, type, parent_id });
+    res.status(201).json(category);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateCategory = async (req, res, next) => {
+  try {
+    const category = await categoryModel.update(req.params.id, req.body);
+    if (!category) return res.status(404).json({ error: 'Not Found', message: 'Category not found or no changes made' });
+    res.status(200).json(category);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteCategory = async (req, res, next) => {
+  try {
+    const activeListings = await query(
+      "SELECT COUNT(*) FROM listings WHERE category_id = $1 AND status = 'active'",
+      [req.params.id]
+    );
+    if (Number(activeListings.rows[0].count) > 0) {
+      return res.status(409).json({ error: 'Conflict', message: 'Category has active listings' });
+    }
+    const category = await categoryModel.softDelete(req.params.id);
+    if (!category) return res.status(404).json({ error: 'Not Found', message: 'Category not found' });
+    res.status(200).json(category);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getDisputes = async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT b.*, c.full_name AS consumer_name, p.full_name AS provider_name
+       FROM bookings b
+       JOIN users c ON c.id = b.consumer_id
+       JOIN users p ON p.id = b.provider_id
+       WHERE b.status = 'disputed'
+       ORDER BY b.updated_at DESC`
+    );
+    res.status(200).json({ disputes: rows });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resolveDispute = async (req, res, next) => {
+  try {
+    const status = req.body.status || 'completed';
+    const allowed = ['completed', 'cancelled', 'rejected'];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Invalid dispute resolution status' });
+    }
+    const { rows } = await query(
+      'UPDATE bookings SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [status, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Not Found', message: 'Dispute not found' });
+    res.status(200).json(rows[0]);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getAnalytics = async (req, res, next) => {
+  try {
+    const [users, listings, bookings, revenue, pendingProviders, pendingListings, growth, activeUsers] = await Promise.all([
+      query('SELECT role, COUNT(*)::int FROM users WHERE is_deleted = false GROUP BY role'),
+      query("SELECT type, COUNT(*)::int FROM listings WHERE status != 'deleted' GROUP BY type"),
+      query('SELECT status, COUNT(*)::int FROM bookings GROUP BY status'),
+      query("SELECT COALESCE(SUM(total_price), 0)::numeric(12,2) AS total FROM bookings WHERE status IN ('confirmed', 'completed')"),
+      query("SELECT COUNT(*)::int AS count FROM users WHERE role = 'provider' AND status = 'pending_verification'"),
+      query("SELECT COUNT(*)::int AS count FROM listings WHERE status = 'pending_approval'"),
+      query(`SELECT to_char(d::date, 'YYYY-MM-DD') AS day, COUNT(b.id)::int AS bookings
+             FROM generate_series(CURRENT_DATE - INTERVAL '29 days', CURRENT_DATE, INTERVAL '1 day') d
+             LEFT JOIN bookings b ON b.created_at::date = d::date
+             GROUP BY 1 ORDER BY 1`),
+      query("SELECT COUNT(*)::int AS count FROM users WHERE is_deleted = false AND status = 'verified'")
+    ]);
+
+    res.status(200).json({
+      usersByRole: users.rows,
+      listingsByType: listings.rows,
+      bookingsByStatus: bookings.rows,
+      totalRevenue: revenue.rows[0].total,
+      pendingProviders: pendingProviders.rows[0].count,
+      pendingListings: pendingListings.rows[0].count,
+      bookingsLast30Days: growth.rows,
+      activeUsers: activeUsers.rows[0].count
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  getPendingProviders, approveProvider, rejectProvider, getPendingNICVerifications,
+  getListingsForModeration, approveListing, suspendListing,
+  getUsers, banUser, suspendUser, reinstateUser, getUserDetail,
+  getNICVerificationDetail, decideNICVerification,
+  getCategories, createCategory, updateCategory, deleteCategory,
+  getDisputes, resolveDispute, getAnalytics,
+};

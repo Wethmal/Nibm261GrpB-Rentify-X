@@ -54,3 +54,30 @@ axiosInstance.interceptors.request.use(
  * Response Interceptor
  * Handles global error responses, particularly 401 Unauthorized.
  */
+axiosInstance.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    // TODO: If error.response.status === 401, clear stored token and redirect to /login
+    // TODO: If error.response.status === 403, redirect to /unauthorized
+    // TODO: If error.response.status === 500, show a global error notification
+    // TODO: Implement token refresh logic if using refresh tokens
+    if (error.response && error.response.status === 403 && error.response.data && error.response.data.code === 'ACCOUNT_RESTRICTED') {
+      // Account was banned/suspended while the session was open: end the session (US24)
+      localStorage.removeItem('Rentify_token');
+      sessionStorage.removeItem('Rentify_token');
+      sessionStorage.setItem('Rentify_restricted', error.response.data.message || 'Your account has been restricted.');
+      window.location.href = '/login';
+      return Promise.reject(error);
+    }
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('Rentify_token');
+      sessionStorage.removeItem('Rentify_token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default axiosInstance;

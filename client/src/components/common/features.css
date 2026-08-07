@@ -1,0 +1,38 @@
+/* Shared styles for report modal, cancellation policy, cancel modal, charts and provider profile widgets */
+.fx-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
+.fx-modal { background: #fff; border-radius: 14px; width: 100%; max-width: 480px; max-height: 90vh; overflow: auto; padding: 22px; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.3); }
+.fx-modal h3 { margin: 0 0 4px; font-size: 1.15rem; color: #0f172a; }
+.fx-modal p.fx-sub { margin: 0 0 14px; color: #64748b; font-size: 0.9rem; }
+.fx-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.fx-field label { font-weight: 600; font-size: 0.85rem; color: #334155; }
+.fx-field select, .fx-field textarea, .fx-field input { border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 10px; font: inherit; }
+.fx-field textarea { min-height: 96px; resize: vertical; }
+.fx-hint { font-size: 0.78rem; color: #64748b; }
+.fx-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.fx-btn { border: none; border-radius: 8px; padding: 9px 16px; font-weight: 600; cursor: pointer; background: #e2e8f0; color: #0f172a; }
+.fx-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.fx-btn--primary { background: #2563eb; color: #fff; }
+.fx-btn--danger { background: #dc2626; color: #fff; }
+.fx-alert { padding: 9px 12px; border-radius: 8px; font-size: 0.88rem; margin-bottom: 10px; }
+.fx-alert--error { background: #fef2f2; color: #b91c1c; }
+.fx-alert--success { background: #f0fdf4; color: #15803d; }
+.fx-link-btn { background: none; border: none; color: #b45309; cursor: pointer; font: inherit; font-size: 0.85rem; padding: 0; display: inline-flex; align-items: center; gap: 4px; text-decoration: underline; }
+
+.fx-policy { border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+.fx-policy summary { cursor: pointer; padding: 10px 12px; font-weight: 600; color: #0f172a; display: flex; align-items: center; gap: 8px; list-style: none; }
+.fx-policy summary::-webkit-details-marker { display: none; }
+.fx-policy-body { padding: 0 12px 12px; color: #475569; font-size: 0.9rem; }
+.fx-policy-body ul { margin: 6px 0 0; padding-left: 18px; }
+.fx-badge { display: inline-block; background: #dbeafe; color: #1d4ed8; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-transform: capitalize; }
+
+.fx-refund { background: #f1f5f9; border-radius: 10px; padding: 12px; margin: 10px 0; font-size: 0.92rem; }
+.fx-refund-row { display: flex; justify-content: space-between; padding: 3px 0; }
+.fx-refund-row strong { color: #0f172a; }
+.fx-refund-total { border-top: 1px solid #cbd5e1; margin-top: 6px; padding-top: 8px; font-size: 1rem; }
+
+.fx-chart { width: 100%; }
+.fx-chart svg { width: 100%; height: auto; display: block; }
+.fx-chart text { font-size: 10px; fill: #64748b; }
+.fx-chart-empty { text-align: center; color: #94a3b8; padding: 24px; font-size: 0.9rem; }
+
+.fx-stars { color: #f59e0b; letter-spacing: 1px; }

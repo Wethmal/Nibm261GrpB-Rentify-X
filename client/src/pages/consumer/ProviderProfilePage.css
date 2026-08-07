@@ -1,0 +1,43 @@
+.pp-page { max-width: 1000px; margin: 0 auto; padding: 16px 16px 110px; }
+.pp-state { max-width: 480px; margin: 80px auto; text-align: center; color: #64748b; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.pp-404 h1 { color: #0f172a; margin: 0; }
+.pp-404 .fx-btn { text-decoration: none; }
+.pp-breadcrumb { display: flex; gap: 8px; align-items: center; font-size: 0.85rem; color: #64748b; margin-bottom: 14px; flex-wrap: wrap; }
+.pp-breadcrumb a { color: #2563eb; text-decoration: none; }
+.pp-hero { display: flex; gap: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; }
+.pp-avatar { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.pp-avatar--empty { background: #e2e8f0; color: #64748b; display: flex; align-items: center; justify-content: center; }
+.pp-hero h1 { margin: 0 0 6px; font-size: 1.5rem; color: #0f172a; display: flex; align-items: center; gap: 6px; }
+.pp-verified { color: #2563eb; }
+.pp-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; color: #64748b; font-size: 0.88rem; margin-bottom: 10px; }
+.pp-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.pp-bio { margin: 0 0 4px; color: #334155; line-height: 1.5; }
+.pp-bio--clamped { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.pp-bio--empty { color: #94a3b8; font-style: italic; }
+.pp-tabs { display: flex; gap: 4px; margin: 18px 0 12px; border-bottom: 1px solid #e2e8f0; }
+.pp-tabs button { background: none; border: none; padding: 10px 14px; cursor: pointer; font-weight: 600; color: #64748b; border-bottom: 2px solid transparent; }
+.pp-tabs button.active { color: #2563eb; border-bottom-color: #2563eb; }
+.pp-filters { display: flex; gap: 8px; margin-bottom: 12px; }
+.pp-filters select { border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 8px; }
+.pp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.pp-empty { text-align: center; color: #94a3b8; padding: 36px 12px; background: #f8fafc; border-radius: 12px; }
+.pp-pager { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 16px; color: #64748b; font-size: 0.9rem; }
+.pp-summary { display: flex; gap: 24px; align-items: center; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+.pp-summary__score { display: flex; flex-direction: column; align-items: center; min-width: 110px; }
+.pp-summary__score strong { font-size: 2rem; color: #0f172a; }
+.pp-summary__score span:last-child { color: #64748b; font-size: 0.8rem; }
+.pp-summary__bars { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 4px; }
+.pp-bar { display: grid; grid-template-columns: 28px 1fr 28px; gap: 8px; align-items: center; font-size: 0.8rem; color: #64748b; }
+.pp-bar div { background: #e2e8f0; border-radius: 999px; height: 8px; overflow: hidden; }
+.pp-bar i { display: block; height: 100%; background: #f59e0b; }
+.pp-reviews { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.pp-reviews li { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; }
+.pp-review__head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pp-review__head time { margin-left: auto; color: #94a3b8; font-size: 0.8rem; }
+.pp-review__listing { color: #64748b; font-size: 0.82rem; }
+.pp-reviews p { margin: 6px 0 0; color: #334155; }
+.pp-actionbar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid #e2e8f0; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; gap: 10px; z-index: 900; box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08); }
+.pp-actionbar__name { font-weight: 700; color: #0f172a; }
+.pp-actionbar__buttons { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pp-actionbar__buttons .fx-btn { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 640px) { .pp-hero { flex-direction: column; align-items: center; text-align: center; } .pp-meta { justify-content: center; } .pp-actionbar__name { display: none; } }

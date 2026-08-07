@@ -303,3 +303,75 @@ const cancel = async (req, res, next) => {
       return res.status(400).json({ error: 'Bad Request', message: 'Can only cancel pending or confirmed bookings' });
     }
 
+    const updatedBooking = await bookingModel.updateStatus(id, 'cancelled');
+    res.status(200).json({ message: 'Booking cancelled successfully', booking: updatedBooking });
+
+    setImmediate(async () => {
+      try {
+        const otherUserId = req.user.userId === booking.consumer_id ? booking.provider_id : booking.consumer_id;
+        const initiatorName = req.user.role === 'consumer' ? 'the consumer' : 'the provider';
+        
+        await notificationModel.create({
+          user_id: otherUserId,
+          type: 'booking_cancelled',
+          title: 'Booking Cancelled',
+          body: `The booking request has been cancelled by ${initiatorName}.`,
+          metadata: { bookingId: id }
+        });
+      } catch (err) {
+        console.error('Failed to send booking_cancelled notification:', err);
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const complete = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'User must be logged in' });
+    }
+
+    const { id } = req.params;
+    const booking = await bookingModel.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Not Found', message: 'Booking not found' });
+    }
+
+    if (booking.provider_id !== req.user.userId) {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only providers can complete bookings' });
+    }
+
+    if (booking.status !== 'confirmed') {
+      return res.status(400).json({ error: 'Bad Request', message: 'Can only complete confirmed bookings' });
+    }
+
+    const updatedBooking = await bookingModel.updateStatus(id, 'completed');
+    try {
+      await require('../services/payout.service').createForBooking({ ...booking, ...updatedBooking });
+    } catch (payoutErr) {
+      console.error('Payout creation failed:', payoutErr.message);
+    }
+    res.status(200).json({ message: 'Booking completed successfully', booking: updatedBooking });
+
+    setImmediate(async () => {
+      try {
+        await notificationModel.create({
+          user_id: booking.consumer_id,
+          type: 'booking_completed',
+          title: 'Booking Completed',
+          body: `Your booking request has been marked as completed.`,
+          metadata: { bookingId: id }
+        });
+      } catch (err) {
+        console.error('Failed to send booking_completed notification:', err);
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { create, getAll, getById, accept, reject, cancel, complete };
